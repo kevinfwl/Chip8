@@ -23,12 +23,17 @@ public class Emulator{
     private byte sp;
 
     private boolean drawFlag;
+    private int keyState;
+
+    private boolean wait;
+    private boolean[] keyState;
 
     private Emulator() {
         this.memory = new byte[4096];
         this.fb = new boolean[64 *32];
         this.stack = new short[16];
         this.V = new int[16];
+        this.keyState = new int[16];
     }
 
     public static Emulator getInstance() {
@@ -41,9 +46,6 @@ public class Emulator{
         byte[] data = Files.readAllBytes(fileLocation);
         for (int i = 0; i < data.length; ++i) {
             memory[0x200 + i] = data[i];
-            // System.out.print(intToString((int) data[i] >> 4));
-            // System.out.print(intToString((int) data[i] & 0xF));
-            // System.out.println("");
         }
         System.out.println(data.length);
     }
@@ -58,22 +60,6 @@ public class Emulator{
 
     public void fetch() {
         this.opcode = (short) (this.memory[this.pc] << 8 | this.memory[this.pc + 1]);
-    }
-
-    public void execute() {
-        switch ((this.opcode >> 12) & 0xf) {
-            case 0x0:
-
-                break;
-
-
-            case 0x1:
-                break;
-
-
-            default:
-                break;
-        }
     }
 
     public void decrementTimer() {
@@ -100,7 +86,7 @@ public class Emulator{
             }
             System.out.println(line);
         }
-
+        this.drawFlag = false;
     }
 
     //PRIVATE FUNCTIONS
@@ -130,7 +116,58 @@ public class Emulator{
         
     }
 
-
+    public void execute() {
+        switch ((this.opcode >> 12) & 0xf) {
+            case 0x0:
+                zero();
+                break;
+            case 0x1:
+                one();
+                break;
+            case 0x2:
+                two();
+                break;
+            case 0x3:
+                three();
+                break;
+            case 0x4:
+                four();
+                break;
+            case 0x5:
+                five();
+                break;
+            case 0x6:
+                six();
+                break;
+            case 0x7:
+                seven();
+                break;
+            case 0x8:
+                eight();
+                break;
+            case 0x9:
+                nine();
+                break;
+            case 0xA:
+                A();
+                break;
+            case 0xB:
+                B();
+                break;
+            case 0xC:
+                C();
+                break;
+            case 0xD:
+                D();
+                break;
+            case 0xE:
+                E();
+                break;
+            case 0xF:
+                F();
+                break;
+        }
+    }
 
     //private opcode functions
     private void zero() {
@@ -154,6 +191,8 @@ public class Emulator{
         }
     }
 
+
+    //opcode decode and execute 
     private void one() {
         this.pc = (short) (this.opcode & 0x0fff);
     }
@@ -190,30 +229,56 @@ public class Emulator{
     }
 
     private void eight() {
-        byte Vx = this.V[(this.opcode >>> 8) & 0xf];
-        byte Vy = this.V[(this.opcode >>> 4) & 0xf];
+        int x = this.V[(this.opcode >>> 8) & 0xf];
+        int y = this.V[(this.opcode >>> 4) & 0xf];
         switch (this.opcode & 0xf) {
             case 0x0:
-                this.V[(this.opcode >>> 8) & 0xf] = this.V[(this.opcode >>> 4) & 0xf];
+                this.V[x] = this.V[y];
                 break;
-            case 0x1:
-            this.V[(this.opcode >>> 8) & 0xf] this.V[(this.opcode >>> 8) & 0xf] | this.V[(this.opcode >>> 4) & 0xf];
-            case 0x2:
 
+            case 0x1:
+                this.V[x] = this.V[(x] | this.V[y];
                 break;
+
+            case 0x2:
+                this.V[x] = this.V[x] & this.V[y];
+                break;
+
             case 0x3:
+                this.V[x] = this.V[x] ^ this.V[y];
                 break;
+
             case 0x4:
+                int addedValue = this.V[x] + this.V[y];
+                if (addedValue > 255) this.V[0xf] = 1;
+                else this.V[0xf] = 0;
+                this.V[x] = addedValue & 0xff;
                 break;
+
             case 0x5:
+                int subtractedValue = this.V[x] + this.V[y];
+                if (subtractedValue > 0) this.V[0xf] = 1;
+                else this.V[0xf] = 0;
+                this.V[x] = subtractedValue & 0xff;
                 break;
+
             case 0x6:
+                if (this.V[x] & 0x1) this.V[0xf] = 1;
+                else this.V[0xf] =0;
+                this.V[x] = this.V[x] >>> 1;
                 break;
+
             case 0x7:
-                break;
+                int subtractedValue = this.V[y] + this.V[(x];
+                if (subtractedValue > 0) this.V[0xf] = 1;
+                else this.V[0xf] = 0;
+                this.V[x] = subtractedValue & 0xff;
+
             case 0xE:
+                if ((this.V[x] >>> 15 ) & 0x1) this.V[0xf] = 1;
+                else this.V[0xf] = 0;
+                this.V[x] = (this.V[x] << 1) & 0xff;
                 break;
-            default:
         }
         this.pc += 2;
     }
@@ -224,6 +289,100 @@ public class Emulator{
     }
 
     private void A() {
-        
+        this.I = this.opcode & 0x0fff;
+        this.pc += 2;
+    }
+
+    private void B() {
+        this.pc = ((this.opcode & 0x0fff) + this.V[0]) & 0xff;
+    }
+
+    private void C() {
+        this.V[(this.opcode >>> 8 ) & 0xf] = (new Random().nextInt(256) + (this.opcode & 0xff)) & 0xff;
+        this.pc += 2;
+    }
+
+    private void D() {
+        int n = this.opcode & 0xf; 
+        int y = this.V[(this.opcode >>> 4) & 0xf];
+        int x = this.V[(this.opcode >>> 8) & 0xf];
+
+        for (int i = 0; i < n; i++) {
+            int spriteRow = memory[I + i];
+            boolean turnedOff = false;
+            for (int j = 0; j < 8; j++) {
+                int displayColor = (spriteRow >> j) & 0x1;
+                int index = ( x + j + (y + i) * 64 ) % 2048;
+                //turn VF to true 
+                if (displayColor && !this.fb[index]) turnedOff = true;
+                this.fb[index] = this.fb[index] ^ displayColor;
+            }
+            
+        }
+        this.V[0xf] = turnedOff;
+        this.drawFlag = true;
+        this.pc += 2;
+    }
+
+    private void E() {
+        int x = (this.opcode >>> 8) & 0xf; 
+        switch (this.opcode & 0xff) {
+            case 0x9E:
+                if (this.keyState[this.V[x]]) pc += 2; 
+                break;
+            case 0xA1:
+                if (this.keyState[this.V[x]]) pc += 2;
+                break;
+        }
+        pc += 2;
+    }
+
+    private void F() {
+        int x = (this.opcode >>> 8) & 0xf;
+        switch (this.opcode & 0xff) {
+            case 0x07:
+                this.V[x] = this.delay;
+                break;
+            case 0x0A:
+                boolean keypressed =  false;
+                for (int i = 0; i < 0xf; i++) {
+                    if (this.keyState[i]) {
+                        this.V[x] = i;
+                        keypressed  = true;
+                    }
+                }
+                if(keypressed) break;
+                return;
+            case 0x15:
+                this.delay = this.V[x];
+                break;
+            case 0x18:
+                this.sound = this.V[x];
+                break;
+            case 0x1E:
+                this.I += this.V[x];
+                break;
+            case 0x29:
+                this.I = this.V[X] * 5;
+                this.drawFlag = true;
+                break;
+            case 0x33:
+                int num = this.V[x];
+                this.memory[this.I + 2] = num % 10;
+                num /= 10;
+                this.memory[this.I + 1] num % 10;
+                num /= 10;
+                this.memory[this.I] num % 10;
+                break;
+            case 0x55:
+                for (int i = 0; i < 16; i++) 
+                    this.memory[this.I + i] = this.V[i];
+                break;
+            case 0x65:
+                for (int i = 0; i < 16; i++) 
+                    this.V[i] = this.memory[this.I + i];            
+                break;
+        }
+        this.pc += 2;
     }
 }
