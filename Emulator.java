@@ -39,8 +39,8 @@ public class Emulator{
     }
 
 
-    public void load() throws IOException{
-        Path fileLocation = Paths.get("D:\\emulator\\chip8Github\\Chip8\\roms\\pong.ch8");
+    public void load(String file) throws IOException{
+        Path fileLocation = Paths.get(file);
         byte[] data = Files.readAllBytes(fileLocation);
         for (int i = 0; i < data.length; ++i) {
             memory[0x200 + i] = data[i];
@@ -54,6 +54,11 @@ public class Emulator{
         this.sp = 0;
         this.pc = 0x200;
         this.drawFlag = false;
+        
+        //init fonset
+        for (int i = 0; i < 80; i++) {
+            this.memory[i] = Fontset.FONT_SET[i];
+        }
     }
 
     public void fetch() {
@@ -62,8 +67,8 @@ public class Emulator{
 
     public void decrementTimer() {
         if (this.sound == 0) beep();
-        if (this.sound >= 0) this.sound--;
-        if (this.delay >= 0) this.delay--;
+        if (this.sound > 0) this.sound--;
+        if (this.delay > 0) this.delay--;
     }
 
     public void CPUcycle() {
@@ -74,8 +79,8 @@ public class Emulator{
     }
 
     public void drawImages() { 
-        System.out.flush();
-        System.out.println("-------------------------------------------------------------------------------------------");
+        System.out.println("\f");
+        System.out.println("------------------------------------------------------------------");
 
         for (int i = 0; i < 32; ++i) {
             String line = "";
@@ -85,9 +90,9 @@ public class Emulator{
                 else 
                     line += " ";  
             }
-            System.out.println("!"+ line + "|");
+            System.out.println("|"+ line + "|");
         }
-        System.out.println("-------------------------------------------------------------------------------------------");
+        System.out.println("------------------------------------------------------------------");
         this.drawFlag = false;
     }
 
@@ -98,16 +103,18 @@ public class Emulator{
             int code = ((this.memory[i]) << 8) | (this.memory[i + 1] & 0xff);
             // System.out.println("start: " + Integer.toBinaryString(code));
             if (code < 0) code = code & 0xFFFF;
-            // System.out.println(this.memory[i] + " " + this.memory[i + 1]);
-            // System.out.println(code);
+            printOpcode(code);
+        }
+    }
+
+    private void printOpcode(int code) {
+            if (code < 0) code = code & 0xFFFF;
             System.out.print("0x");
             System.out.print(intToString(code >> 12));
             System.out.print(intToString((code >> 8) & 0xF));
             System.out.print(intToString((code >> 4) & 0xF));
             System.out.print(intToString(code & 0xF));
             System.out.println("");
-            // System.out.println(i - 512);
-        }
     }
 
 
@@ -127,6 +134,11 @@ public class Emulator{
     }
 
     public void execute() {
+        if (this.delay >= -1) {
+            System.out.print("Executing: ");
+            printOpcode(this.opcode);
+            System.out.println("delay: " + this.delay);
+        }
         switch ((this.opcode >> 12) & 0xf) {
             case 0x0:
                 zero();
@@ -229,19 +241,19 @@ public class Emulator{
     }
 
     private void six() {
-        this.V[(this.opcode >>> 8) & 0xf] = (byte) (this.opcode & 0x00ff);
+        this.V[(this.opcode >>> 8) & 0xf] = (this.opcode & 0x00ff);
         this.pc +=2;
     }
 
     private void seven() {
-        this.V[(this.opcode >>> 8) & 0xf] += (byte) (this.opcode & 0x00ff);
+        this.V[(this.opcode >>> 8) & 0xf] += (this.opcode & 0x00ff);
         this.pc +=2;
     }
 
     private void eight() {
-        int x = this.V[(this.opcode >>> 8) & 0xf];
-        int y = this.V[(this.opcode >>> 4) & 0xf];
-        switch (this.opcode & 0xf) {
+        int x = (this.opcode >>> 8) & 0xf;
+        int y = (this.opcode >>> 4) & 0xf;
+        switch (this.opcode & 0x000f) {
             case 0x0:
                 this.V[x] = this.V[y];
                 break;
@@ -251,6 +263,7 @@ public class Emulator{
                 break;
 
             case 0x2:
+
                 this.V[x] = this.V[x] & this.V[y];
                 break;
 
@@ -322,13 +335,17 @@ public class Emulator{
             int spriteRow = memory[I + i];
             
             for (int j = 0; j < 8; j++) {
-                int displayColor = (spriteRow >> j) & 0x1;
-                int index = ( x + j + (y + i) * 64 ) % 2048;
+                int displayColor = (spriteRow >>> (7-j)) & 0x0001;
+                System.out.print(displayColor);
+                
                 //turn VF to true 
-                if ((displayColor == 1) && !this.fb[index]) turnedOff = true;
-                this.fb[index] = this.fb[index] ^ (displayColor == 1);
-            }
-            
+                if (displayColor != 0) {
+                    int index = ( x + j + (y + i) * 64 ) % 2048;
+                    if ((displayColor == 1) && this.fb[index]) turnedOff = true;
+                    this.fb[index] ^= true;
+                }
+            }  
+            System.out.println("");
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
@@ -350,8 +367,8 @@ public class Emulator{
     }
 
     private void F() {
-        int x = (this.opcode >>> 8) & 0xf;
-        switch (this.opcode & 0xff) {
+        int x = (this.opcode >>> 8) & 0x000f;
+        switch (this.opcode & 0x00ff) {
             case 0x07:
                 this.V[x] = this.delay;
                 break;

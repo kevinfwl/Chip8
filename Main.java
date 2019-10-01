@@ -5,7 +5,7 @@ public class Main {
         try {
             Emulator emu = Emulator.getInstance();
             emu.init();
-            emu.load();
+            emu.load("C:\\personal\\Chip8\\roms\\PONG.ch8");
             emu.printMem();
             while(runProgram) {
                 emu.CPUcycle();
@@ -14,10 +14,13 @@ public class Main {
         catch(Exception e) {
             e.printStackTrace();
         }
-
-        
     }
+
+
 }
+
+//D:\\emulator\\chip8Github\\Chip8\\roms\\ibm.ch8
+//C:\personal\Chip8\roms\ibm.ch8
 
 // import javax.swing.*;
 // class Main {
