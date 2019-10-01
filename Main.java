@@ -8,7 +8,7 @@ public class Main {
             emu.load();
             emu.printMem();
             while(runProgram) {
-                // emu.executeLoop();
+                emu.CPUcycle();
             }
         }
         catch(Exception e) {
@@ -18,3 +18,18 @@ public class Main {
         
     }
 }
+
+// import javax.swing.*;
+// class Main {
+//     public static void main(String args[]){
+//        JFrame frame = new JFrame("My First GUI");
+//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//        frame.setSize(1280,640);
+//        JButton button = new JButton("Press");
+//        frame.getContentPane().add(button); // Adds Button to content pane of frame
+
+
+
+//        frame.setVisible(true);
+//     }
+// }

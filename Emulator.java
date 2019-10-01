@@ -1,39 +1,37 @@
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Random;
 import java.io.IOException;
 
 public class Emulator{
     public static Emulator INSTANCE = new Emulator();
 
-    private short opcode;
+    private int opcode;
 
-    private byte[] memory;
+    private int[] memory;
     private int[] V;
-    private short pc;
-    private short I;
+    private int pc;
+    private int I;
 
     
     private boolean[] fb;
-    private byte sound;
-    private byte delay;
+    private int sound;
+    private int delay;
     
     //stack
-    private short[] stack;
-    private byte sp;
+    private int[] stack;
+    private int sp;
 
     private boolean drawFlag;
-    private int keyState;
-
-    private boolean wait;
     private boolean[] keyState;
 
     private Emulator() {
-        this.memory = new byte[4096];
+        this.memory = new int[4096];
         this.fb = new boolean[64 *32];
-        this.stack = new short[16];
+        this.stack = new int[16];
         this.V = new int[16];
-        this.keyState = new int[16];
+        this.keyState = new boolean[16];
     }
 
     public static Emulator getInstance() {
@@ -59,7 +57,7 @@ public class Emulator{
     }
 
     public void fetch() {
-        this.opcode = (short) (this.memory[this.pc] << 8 | this.memory[this.pc + 1]);
+        this.opcode = (this.memory[this.pc] << 8 | (this.memory[this.pc + 1] & 0xff));
     }
 
     public void decrementTimer() {
@@ -72,20 +70,24 @@ public class Emulator{
         fetch();
         execute();
         decrementTimer();
+        if (drawFlag) drawImages();
     }
 
     public void drawImages() { 
         System.out.flush();
+        System.out.println("-------------------------------------------------------------------------------------------");
+
         for (int i = 0; i < 32; ++i) {
             String line = "";
-            for (int j = 0; j < 64 ; ++i) {
-                if (this.fb[i * 32 + j]) 
+            for (int j = 0; j < 64 ; ++j) {
+                if (this.fb[i * 64 + j]) 
                     line += "*";
                 else 
                     line += " ";  
             }
-            System.out.println(line);
+            System.out.println("!"+ line + "|");
         }
+        System.out.println("-------------------------------------------------------------------------------------------");
         this.drawFlag = false;
     }
 
@@ -93,19 +95,28 @@ public class Emulator{
     //prints bytes into the rom
     public void printMem() {
         for (int i = 0x200; i < 0x300; i+=2) {
-            int code = (((short) this.memory[i]) << 8) | ((short) this.memory[i + 1] & 0xff);
+            int code = ((this.memory[i]) << 8) | (this.memory[i + 1] & 0xff);
             // System.out.println("start: " + Integer.toBinaryString(code));
             if (code < 0) code = code & 0xFFFF;
             // System.out.println(this.memory[i] + " " + this.memory[i + 1]);
-            System.out.println(code);
+            // System.out.println(code);
             System.out.print("0x");
             System.out.print(intToString(code >> 12));
             System.out.print(intToString((code >> 8) & 0xF));
             System.out.print(intToString((code >> 4) & 0xF));
             System.out.print(intToString(code & 0xF));
             System.out.println("");
-            System.out.println(i - 512);
+            // System.out.println(i - 512);
         }
+    }
+
+
+    public void setKeyOn(int num) {
+        this.keyState[num] = true;
+    }
+
+    public void setKeyOff(int num) {
+        this.keyState[num] = false;
     }
 
     private char intToString(int hex){
@@ -113,7 +124,6 @@ public class Emulator{
     }
 
     private void beep() {
-        
     }
 
     public void execute() {
@@ -194,12 +204,12 @@ public class Emulator{
 
     //opcode decode and execute 
     private void one() {
-        this.pc = (short) (this.opcode & 0x0fff);
+        this.pc = (this.opcode & 0x0fff);
     }
 
     private void two() {
         this.stack[++this.sp] = pc;
-        this.pc = (short) (this.opcode & 0x0fff);
+        this.pc = (this.opcode & 0x0fff);
         this.drawFlag = true;
     }
 
@@ -237,7 +247,7 @@ public class Emulator{
                 break;
 
             case 0x1:
-                this.V[x] = this.V[(x] | this.V[y];
+                this.V[x] = this.V[x] | this.V[y];
                 break;
 
             case 0x2:
@@ -256,26 +266,26 @@ public class Emulator{
                 break;
 
             case 0x5:
-                int subtractedValue = this.V[x] + this.V[y];
-                if (subtractedValue > 0) this.V[0xf] = 1;
+                int xsuby = this.V[x] - this.V[y];
+                if (xsuby > 0) this.V[0xf] = 1;
                 else this.V[0xf] = 0;
-                this.V[x] = subtractedValue & 0xff;
+                this.V[x] = xsuby & 0xff;
                 break;
 
             case 0x6:
-                if (this.V[x] & 0x1) this.V[0xf] = 1;
-                else this.V[0xf] =0;
+                if ((this.V[x] & 0x1) == 1) this.V[0xf] = 1;
+                else this.V[0xf] = 0;
                 this.V[x] = this.V[x] >>> 1;
                 break;
 
             case 0x7:
-                int subtractedValue = this.V[y] + this.V[(x];
-                if (subtractedValue > 0) this.V[0xf] = 1;
+                int ysubx = this.V[y] - this.V[x];
+                if (ysubx > 0) this.V[0xf] = 1;
                 else this.V[0xf] = 0;
-                this.V[x] = subtractedValue & 0xff;
+                this.V[x] = ysubx & 0xff;
 
             case 0xE:
-                if ((this.V[x] >>> 15 ) & 0x1) this.V[0xf] = 1;
+                if (((this.V[x] >>> 15) & 0x1) != 0) this.V[0xf] = 1;
                 else this.V[0xf] = 0;
                 this.V[x] = (this.V[x] << 1) & 0xff;
                 break;
@@ -289,12 +299,12 @@ public class Emulator{
     }
 
     private void A() {
-        this.I = this.opcode & 0x0fff;
+        this.I = (this.opcode & 0x0fff);
         this.pc += 2;
     }
 
     private void B() {
-        this.pc = ((this.opcode & 0x0fff) + this.V[0]) & 0xff;
+        this.pc = (((this.opcode & 0x0fff) + this.V[0]) & 0xff);
     }
 
     private void C() {
@@ -306,20 +316,21 @@ public class Emulator{
         int n = this.opcode & 0xf; 
         int y = this.V[(this.opcode >>> 4) & 0xf];
         int x = this.V[(this.opcode >>> 8) & 0xf];
+        boolean turnedOff = false;
 
         for (int i = 0; i < n; i++) {
             int spriteRow = memory[I + i];
-            boolean turnedOff = false;
+            
             for (int j = 0; j < 8; j++) {
                 int displayColor = (spriteRow >> j) & 0x1;
                 int index = ( x + j + (y + i) * 64 ) % 2048;
                 //turn VF to true 
-                if (displayColor && !this.fb[index]) turnedOff = true;
-                this.fb[index] = this.fb[index] ^ displayColor;
+                if ((displayColor == 1) && !this.fb[index]) turnedOff = true;
+                this.fb[index] = this.fb[index] ^ (displayColor == 1);
             }
             
         }
-        this.V[0xf] = turnedOff;
+        this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
         this.pc += 2;
     }
@@ -330,6 +341,7 @@ public class Emulator{
             case 0x9E:
                 if (this.keyState[this.V[x]]) pc += 2; 
                 break;
+
             case 0xA1:
                 if (this.keyState[this.V[x]]) pc += 2;
                 break;
@@ -343,6 +355,7 @@ public class Emulator{
             case 0x07:
                 this.V[x] = this.delay;
                 break;
+
             case 0x0A:
                 boolean keypressed =  false;
                 for (int i = 0; i < 0xf; i++) {
@@ -353,35 +366,43 @@ public class Emulator{
                 }
                 if(keypressed) break;
                 return;
+
             case 0x15:
                 this.delay = this.V[x];
                 break;
+
             case 0x18:
                 this.sound = this.V[x];
                 break;
+
             case 0x1E:
                 this.I += this.V[x];
                 break;
+
             case 0x29:
-                this.I = this.V[X] * 5;
+                this.I = this.V[x] * 5;
                 this.drawFlag = true;
                 break;
+
             case 0x33:
                 int num = this.V[x];
                 this.memory[this.I + 2] = num % 10;
                 num /= 10;
-                this.memory[this.I + 1] num % 10;
+                this.memory[this.I + 1] = num % 10;
                 num /= 10;
-                this.memory[this.I] num % 10;
+                this.memory[this.I] = num % 10;
                 break;
+                
             case 0x55:
                 for (int i = 0; i < 16; i++) 
                     this.memory[this.I + i] = this.V[i];
                 break;
+
             case 0x65:
                 for (int i = 0; i < 16; i++) 
                     this.V[i] = this.memory[this.I + i];            
                 break;
+
         }
         this.pc += 2;
     }
