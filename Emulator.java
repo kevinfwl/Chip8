@@ -13,7 +13,6 @@ public class Emulator{
     private int[] V;
     private int pc;
     private int I;
-
     
     private boolean[] fb;
     private int sound;
@@ -126,6 +125,14 @@ public class Emulator{
         this.keyState[num] = false;
     }
 
+    public boolean getPixel(int x, int y) {
+        return this.fb[64 * y + x];
+    }
+
+    public boolean getDrawFlag() {
+        return this.drawFlag;
+    }
+
     private char intToString(int hex){
         return "0123456789ABCDEF".toCharArray()[hex];
     }
@@ -133,12 +140,18 @@ public class Emulator{
     private void beep() {
     }
 
+    public boolean first =  false;
+
     public void execute() {
         if (this.delay >= -1) {
             System.out.print("Executing: ");
             printOpcode(this.opcode);
+            System.out.println("A: " + this.V[0xA] + "           " + "B: " + this.V[0xB]);
             System.out.println("delay: " + this.delay);
         }
+        if (this.V[0xA] != 0) first = true;
+        if (this.V[0xA] == 0 && first) System.exit(0);
+
         switch ((this.opcode >> 12) & 0xf) {
             case 0x0:
                 zero();
@@ -367,6 +380,7 @@ public class Emulator{
     }
 
     private void F() {
+        System.out.println("hit");
         int x = (this.opcode >>> 8) & 0x000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
@@ -411,12 +425,12 @@ public class Emulator{
                 break;
                 
             case 0x55:
-                for (int i = 0; i < 16; i++) 
+                for (int i = 0; i < x; i++) 
                     this.memory[this.I + i] = this.V[i];
                 break;
 
             case 0x65:
-                for (int i = 0; i < 16; i++) 
+                for (int i = 0; i < x; i++) 
                     this.V[i] = this.memory[this.I + i];            
                 break;
 

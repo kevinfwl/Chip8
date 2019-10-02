@@ -8,4 +8,6 @@ class Front {
        frame.getContentPane().add(button); // Adds Button to content pane of frame
        frame.setVisible(true);
     }
+
+    
 }
