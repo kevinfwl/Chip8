@@ -74,7 +74,7 @@ public class Emulator{
         fetch();
         execute();
         decrementTimer();
-        if (drawFlag) drawImages();
+        // if (drawFlag) drawImages();
     }
 
     public void drawImages() { 
@@ -133,6 +133,10 @@ public class Emulator{
         return this.drawFlag;
     }
 
+    public void setDrawFlag(boolean flag) {
+        this.drawFlag = flag;
+    }
+
     private char intToString(int hex){
         return "0123456789ABCDEF".toCharArray()[hex];
     }
@@ -146,7 +150,7 @@ public class Emulator{
         if (this.delay >= -1) {
             System.out.print("Executing: ");
             printOpcode(this.opcode);
-            System.out.println("A: " + this.V[0xA] + "           " + "B: " + this.V[0xB]);
+            System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
             System.out.println("delay: " + this.delay);
         }
         if (this.V[0xA] != 0) first = true;
