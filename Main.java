@@ -24,7 +24,11 @@ public class Main extends Application {
         launch(args);
     }
     
+
+    //automaticcally called in start function implicitly
     public void init() {
+        // System.out.println("kasldj\t" + "okay");
+        // System.out.println("as\t" + "okay");
         this.emu = Emulator.getInstance();
         this.screen = new Screen(this.emu);
         this.screen.init();
@@ -41,7 +45,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        init();
+        //init();
 
         primaryStage.setTitle("Hello World!");
         AnimationTimer timer = new AnimationTimer(){

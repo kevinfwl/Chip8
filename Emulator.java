@@ -50,7 +50,7 @@ public class Emulator{
     public void init() {
         this.opcode = 0;
         this.I = 0;
-        this.sp = 0;
+        this.sp = -1;
         this.pc = 0x200;
         this.drawFlag = false;
         
@@ -93,6 +93,22 @@ public class Emulator{
         }
         System.out.println("------------------------------------------------------------------");
         this.drawFlag = false;
+    }
+
+    public void printDebugger() {
+        String allRegs = "";
+        String allStack = "";
+        for (int i =0; i < 0x10; i++) {
+            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
+            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+        }
+        System.out.print("Executing: ");
+        printOpcode(this.opcode);
+        System.out.println(allRegs);
+        System.out.println(allStack);
+        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
+        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        System.out.println();
     }
 
     //PRIVATE FUNCTIONS
@@ -147,12 +163,13 @@ public class Emulator{
     public boolean first =  false;
 
     public void execute() {
-        if (this.delay >= -1) {
-            System.out.print("Executing: ");
-            printOpcode(this.opcode);
-            System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
-            System.out.println("delay: " + this.delay);
-        }
+        // if (this.delay >= -1) {
+        //     System.out.print("Executing: ");
+        //     printOpcode(this.opcode);
+        //     System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
+        //     System.out.println("delay: " + this.delay);
+        // }
+        System.out.println("Current pc: 0x"  +  Integer.toHexString(this.pc));
         if (this.V[0xA] != 0) first = true;
         if (this.V[0xA] == 0 && first) System.exit(0);
 
@@ -206,6 +223,7 @@ public class Emulator{
                 F();
                 break;
         }
+        printDebugger();
     }
 
     //private opcode functions
@@ -239,7 +257,7 @@ public class Emulator{
     private void two() {
         this.stack[++this.sp] = pc;
         this.pc = (this.opcode & 0x0fff);
-        this.drawFlag = true;
+        // this.drawFlag = true;
     }
 
     private void three() {
@@ -264,6 +282,9 @@ public class Emulator{
 
     private void seven() {
         this.V[(this.opcode >>> 8) & 0xf] += (this.opcode & 0x00ff);
+        if (this.V[(this.opcode >>> 8) & 0xf] >= 256) {
+            this.V[(this.opcode >>> 8) & 0xf] -= 256;
+        }
         this.pc +=2;
     }
 
@@ -363,10 +384,10 @@ public class Emulator{
                 }
             }  
             System.out.println("");
+            this.pc += 2;
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
-        this.pc += 2;
     }
 
     private void E() {
@@ -441,4 +462,5 @@ public class Emulator{
         }
         this.pc += 2;
     }
+
 }
