@@ -359,7 +359,7 @@ public class Emulator{
     }
 
     private void C() {
-        this.V[(this.opcode >>> 8 ) & 0xf] = (new Random().nextInt(256) + (this.opcode & 0xff)) & 0xff;
+        this.V[(this.opcode >>> 8 ) & 0xf] = (new Random().nextInt(256) & (this.opcode & 0xff)) & 0xff;
         this.pc += 2;
     }
 
@@ -405,7 +405,6 @@ public class Emulator{
     }
 
     private void F() {
-        System.out.println("hit");
         int x = (this.opcode >>> 8) & 0x000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
