@@ -68,7 +68,7 @@ public class Main extends JPanel {
               else {
                 g2d.setColor(Color.WHITE);
               }
-              g2d.drawRect(x * 10, y * 10, 10, 10);]
+              g2d.drawRect(x * 10, y * 10, 10, 10);
               repaint();
           }
       }
@@ -76,12 +76,10 @@ public class Main extends JPanel {
     }
   
     public static void main(String[] args) {
-
-
         try {
             Emulator emu = Emulator.getInstance();
             emu.init();
-            emu.load("D:\\emulator\\chip8Github\\Chip8\\roms\\pong.ch8");
+            emu.load("C:\\personal\\Chip8\\roms\\test_opcode.ch8");
             emu.printMem();
 
             Main rects = new Main(emu);
@@ -91,13 +89,12 @@ public class Main extends JPanel {
             frame.setSize(640, 320);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
-
+            
+            //game loop
             while(true) {
                 emu.CPUcycle();
                 if (emu.getDrawFlag()) {
-                    frame.setVisible(false);
                     frame.revalidate();
-                    frame.setVisible(true);
                 }
             }
         }

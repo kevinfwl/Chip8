@@ -3,10 +3,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Random;
 import java.io.IOException;
+import javafx.application.Application;
 
 public class Emulator{
     public static Emulator INSTANCE = new Emulator();
-
     private int opcode;
 
     private int[] memory;
