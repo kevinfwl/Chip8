@@ -58,6 +58,9 @@ public class Emulator{
         for (int i = 0; i < 80; i++) {
             this.memory[i] = Fontset.FONT_SET[i];
         }
+        for (int i  = 0; i < 0x10; i++) {
+            this.keyState[i] = false;
+        }
     }
 
     public void fetch() {
@@ -70,7 +73,7 @@ public class Emulator{
         if (this.delay > 0) this.delay--;
     }
 
-    public void CPUcycle() {
+    public void CPUcycle() throws Exception {
         fetch();
         execute();
         decrementTimer();
@@ -162,7 +165,7 @@ public class Emulator{
 
     public boolean first =  false;
 
-    public void execute() {
+    public void execute() throws Exception{
         // if (this.delay >= -1) {
         //     System.out.print("Executing: ");
         //     printOpcode(this.opcode);
@@ -227,7 +230,7 @@ public class Emulator{
     }
 
     //private opcode functions
-    private void zero() {
+    private void zero() throws Exception{
         switch (this.opcode) {
             case 0x00E0:
                 for ( boolean pixel : this.fb) {
@@ -244,7 +247,7 @@ public class Emulator{
                 return;
             default:
                 this.pc = (short) (this.opcode & 0x0fff);
-                return;
+                throw new Exception("err");
         }
     }
 
@@ -288,7 +291,7 @@ public class Emulator{
         this.pc +=2;
     }
 
-    private void eight() {
+    private void eight() throws Exception {
         int x = (this.opcode >>> 8) & 0xf;
         int y = (this.opcode >>> 4) & 0xf;
         switch (this.opcode & 0x000f) {
@@ -302,7 +305,7 @@ public class Emulator{
 
             case 0x2:
 
-                this.V[x] = this.V[x] & this.V[y];
+                this.V[x] = this.V[x]  & this.V[y];
                 break;
 
             case 0x3:
@@ -340,6 +343,8 @@ public class Emulator{
                 else this.V[0xf] = 0;
                 this.V[x] = (this.V[x] << 1) & 0xff;
                 break;
+            default:
+                throw new Exception("err");
         }
         this.pc += 2;
     }
@@ -383,11 +388,11 @@ public class Emulator{
                     this.fb[index] ^= true;
                 }
             }  
-            System.out.println("");
-            this.pc += 2;
+            System.out.println("");        
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
+        this.pc += 2;
     }
 
     private void E() {
@@ -398,13 +403,13 @@ public class Emulator{
                 break;
 
             case 0xA1:
-                if (this.keyState[this.V[x]]) pc += 2;
+                if (!this.keyState[this.V[x]]) pc += 2;
                 break;
         }
         pc += 2;
     }
 
-    private void F() {
+    private void F() throws Exception {
         int x = (this.opcode >>> 8) & 0x000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
@@ -432,6 +437,13 @@ public class Emulator{
 
             case 0x1E:
                 this.I += this.V[x];
+                if(I > 0xFFF) {
+                    V[0xF] = 1;
+                } else {
+                    V[0xF] = 0;
+                }
+                
+                I &= 0xFFF;
                 break;
 
             case 0x29:
@@ -457,7 +469,8 @@ public class Emulator{
                 for (int i = 0; i < x; i++) 
                     this.V[i] = this.memory[this.I + i];            
                 break;
-
+            default:
+                throw new Exception("Err: F");
         }
         this.pc += 2;
     }

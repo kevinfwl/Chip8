@@ -51,14 +51,20 @@ public class Main extends Application {
         AnimationTimer timer = new AnimationTimer(){
             @Override
             public void handle(long now) {
-                emu.CPUcycle();
-                if (emu.getDrawFlag()) {
-                    screen.redraw();  
-                    emu.setDrawFlag(false);              
+                try {
+                    emu.CPUcycle();
+                    if (emu.getDrawFlag()) {
+                        screen.redraw();  
+                        emu.setDrawFlag(false);              
+                    }
+    
+                    if (debugState) {
+                        stop();
+                    }
                 }
-
-                if (debugState) {
-                    stop();
+                catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
                 }
             }
         };
