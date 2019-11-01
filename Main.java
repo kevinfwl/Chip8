@@ -32,10 +32,10 @@ public class Main extends Application {
         this.emu = Emulator.getInstance();
         this.screen = new Screen(this.emu);
         this.screen.init();
-        this.debugState = true;
+        this.debugState = false;
         try {
             this.emu.init();
-            this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\TETRIS");
+            this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\tetris.rom");
         }
         catch (Exception e) {
             e.printStackTrace();
