@@ -50,13 +50,16 @@ public class Emulator{
     public void init() {
         this.opcode = 0;
         this.I = 0;
-        this.sp = 0;
+        this.sp = -1;
         this.pc = 0x200;
         this.drawFlag = false;
         
         //init fonset
         for (int i = 0; i < 80; i++) {
             this.memory[i] = Fontset.FONT_SET[i];
+        }
+        for (int i  = 0; i < 0x10; i++) {
+            this.keyState[i] = false;
         }
     }
 
@@ -70,11 +73,11 @@ public class Emulator{
         if (this.delay > 0) this.delay--;
     }
 
-    public void CPUcycle() {
+    public void CPUcycle() throws Exception {
         fetch();
         execute();
         decrementTimer();
-        if (drawFlag) drawImages();
+        // if (drawFlag) drawImages();
     }
 
     public void drawImages() { 
@@ -93,6 +96,22 @@ public class Emulator{
         }
         System.out.println("------------------------------------------------------------------");
         this.drawFlag = false;
+    }
+
+    public void printDebugger() {
+        String allRegs = "";
+        String allStack = "";
+        for (int i =0; i < 0x10; i++) {
+            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
+            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+        }
+        System.out.print("Executing: ");
+        printOpcode(this.opcode);
+        System.out.println(allRegs);
+        System.out.println(allStack);
+        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
+        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        System.out.println();
     }
 
     //PRIVATE FUNCTIONS
@@ -133,6 +152,10 @@ public class Emulator{
         return this.drawFlag;
     }
 
+    public void setDrawFlag(boolean flag) {
+        this.drawFlag = flag;
+    }
+
     private char intToString(int hex){
         return "0123456789ABCDEF".toCharArray()[hex];
     }
@@ -142,13 +165,14 @@ public class Emulator{
 
     public boolean first =  false;
 
-    public void execute() {
-        if (this.delay >= -1) {
-            System.out.print("Executing: ");
-            printOpcode(this.opcode);
-            System.out.println("A: " + this.V[0xA] + "           " + "B: " + this.V[0xB]);
-            System.out.println("delay: " + this.delay);
-        }
+    public void execute() throws Exception{
+        // if (this.delay >= -1) {
+        //     System.out.print("Executing: ");
+        //     printOpcode(this.opcode);
+        //     System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
+        //     System.out.println("delay: " + this.delay);
+        // }
+        System.out.println("Current pc: 0x"  +  Integer.toHexString(this.pc));
         if (this.V[0xA] != 0) first = true;
         if (this.V[0xA] == 0 && first) System.exit(0);
 
@@ -202,10 +226,11 @@ public class Emulator{
                 F();
                 break;
         }
+        printDebugger();
     }
 
     //private opcode functions
-    private void zero() {
+    private void zero() throws Exception{
         switch (this.opcode) {
             case 0x00E0:
                 for ( boolean pixel : this.fb) {
@@ -222,7 +247,7 @@ public class Emulator{
                 return;
             default:
                 this.pc = (short) (this.opcode & 0x0fff);
-                return;
+                throw new Exception("err");
         }
     }
 
@@ -235,7 +260,7 @@ public class Emulator{
     private void two() {
         this.stack[++this.sp] = pc;
         this.pc = (this.opcode & 0x0fff);
-        this.drawFlag = true;
+        // this.drawFlag = true;
     }
 
     private void three() {
@@ -260,10 +285,13 @@ public class Emulator{
 
     private void seven() {
         this.V[(this.opcode >>> 8) & 0xf] += (this.opcode & 0x00ff);
+        if (this.V[(this.opcode >>> 8) & 0xf] >= 256) {
+            this.V[(this.opcode >>> 8) & 0xf] -= 256;
+        }
         this.pc +=2;
     }
 
-    private void eight() {
+    private void eight() throws Exception {
         int x = (this.opcode >>> 8) & 0xf;
         int y = (this.opcode >>> 4) & 0xf;
         switch (this.opcode & 0x000f) {
@@ -277,7 +305,7 @@ public class Emulator{
 
             case 0x2:
 
-                this.V[x] = this.V[x] & this.V[y];
+                this.V[x] = this.V[x]  & this.V[y];
                 break;
 
             case 0x3:
@@ -315,6 +343,8 @@ public class Emulator{
                 else this.V[0xf] = 0;
                 this.V[x] = (this.V[x] << 1) & 0xff;
                 break;
+            default:
+                throw new Exception("err");
         }
         this.pc += 2;
     }
@@ -334,7 +364,7 @@ public class Emulator{
     }
 
     private void C() {
-        this.V[(this.opcode >>> 8 ) & 0xf] = (new Random().nextInt(256) + (this.opcode & 0xff)) & 0xff;
+        this.V[(this.opcode >>> 8 ) & 0xf] = (new Random().nextInt(256) & (this.opcode & 0xff)) & 0xff;
         this.pc += 2;
     }
 
@@ -358,7 +388,7 @@ public class Emulator{
                     this.fb[index] ^= true;
                 }
             }  
-            System.out.println("");
+            System.out.println("");        
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
@@ -373,14 +403,13 @@ public class Emulator{
                 break;
 
             case 0xA1:
-                if (this.keyState[this.V[x]]) pc += 2;
+                if (!this.keyState[this.V[x]]) pc += 2;
                 break;
         }
         pc += 2;
     }
 
-    private void F() {
-        System.out.println("hit");
+    private void F() throws Exception {
         int x = (this.opcode >>> 8) & 0x000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
@@ -408,6 +437,13 @@ public class Emulator{
 
             case 0x1E:
                 this.I += this.V[x];
+                if(I > 0xFFF) {
+                    V[0xF] = 1;
+                } else {
+                    V[0xF] = 0;
+                }
+                
+                I &= 0xFFF;
                 break;
 
             case 0x29:
@@ -433,8 +469,10 @@ public class Emulator{
                 for (int i = 0; i < x; i++) 
                     this.V[i] = this.memory[this.I + i];            
                 break;
-
+            default:
+                throw new Exception("Err: F");
         }
         this.pc += 2;
     }
+
 }

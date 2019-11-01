@@ -1,105 +1,97 @@
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+import javafx.scene.canvas.Canvas;
+import javafx.animation.*;
+ 
+public class Main extends Application {
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+    //STATES
 
-// public class Main extends JFrame  {
-    // public static void main(String[] args) {
-    //     boolean runProgram = true;
-        
-    //     try {
-    //         Emulator emu = Emulator.getInstance();
-    //         emu.init();
-    //         emu.load("D:\\emulator\\chip8Github\\Chip8\\roms\\pong.ch8");
-    //         emu.printMem();
-    //         while(runProgram) {
-    //             emu.CPUcycle();
-    //         }
-    //     }
-    //     catch(Exception e) {
-    //         e.printStackTrace();
-    //     }
-    // }
-
-
-// }
-
-//D:\\emulator\\chip8Github\\Chip8\\roms\\ibm.ch8
-//C:\personal\Chip8\roms\ibm.ch8
-
-// import javax.swing.*;
-// class Main {
-//     public static void main(String args[]){
-//        JFrame frame = new JFrame("My First GUI");
-//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        frame.setSize(1280,640);
-//        JButton button = new JButton("Press");
-//        frame.getContentPane().add(button); // Adds Button to content pane of frame
-
-
-
-//        frame.setVisible(true);
-//     }
-// }
-
-
-
-public class Main extends JPanel {
-    
+    private HBox hBox;
+    private VBox vBox;
+    private Screen screen;
     private Emulator emu;
 
-    public Main(Emulator emu) {
-        super();
-        this.emu = emu;
-    }
+    private boolean debugState;
 
-    public void paintComponent(Graphics g) {
-      super.paintComponent(g);
-      Graphics2D g2d = (Graphics2D) g;
-  
-  
-      for (int x = 0; x < 64; x++) {
-          for (int y = 0; y < 32; y++) {
-              if(this.emu.getPixel(x, y)) {
-                g2d.setColor(Color.BLACK);
-              }
-              else {
-                g2d.setColor(Color.WHITE);
-              }
-              g2d.drawRect(x * 10, y * 10, 10, 10);
-              repaint();
-          }
-      }
-  
-    }
-  
     public static void main(String[] args) {
-        try {
-            Emulator emu = Emulator.getInstance();
-            emu.init();
-            emu.load("C:\\personal\\Chip8\\roms\\test_opcode.ch8");
-            emu.printMem();
+        launch(args);
+    }
+    
 
-            Main rects = new Main(emu);
-            JFrame frame = new JFrame("Rectangles");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-            frame.add(rects);
-            frame.setSize(640, 320);
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-            
-            //game loop
-            while(true) {
-                emu.CPUcycle();
-                if (emu.getDrawFlag()) {
-                    frame.revalidate();
+    //automaticcally called in start function implicitly
+    public void init() {
+        // System.out.println("kasldj\t" + "okay");
+        // System.out.println("as\t" + "okay");
+        this.emu = Emulator.getInstance();
+        this.screen = new Screen(this.emu);
+        this.screen.init();
+        this.debugState = true;
+        try {
+            this.emu.init();
+            // this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\TETRIS");
+            this.emu.load("C:\\personal\\Chip8\\roms\\TETRIS");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        //init();
+
+        primaryStage.setTitle("Hello World!");
+        AnimationTimer timer = new AnimationTimer(){
+            @Override
+            public void handle(long now) {
+                try {
+                    emu.CPUcycle();
+                    if (emu.getDrawFlag()) {
+                        screen.redraw();  
+                        emu.setDrawFlag(false);              
+                    }
+    
+                    if (debugState) {
+                        stop();
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
                 }
             }
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
+        };
+        
+        StackPane root = new StackPane();
+        root.getChildren().add(screen);
+        
+        Scene mainScene = new Scene(root, 640, 320);
+        mainScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            
+            @Override
+            public void handle(KeyEvent event) {
+                switch (event.getCode()) {
+                    case ENTER:
+                        timer.start();
+                }
+            }
+        });
+
+        primaryStage.setScene(mainScene);
+        primaryStage.setResizable(false);
+        primaryStage.show();
+        timer.start();
     }
-  }
+
+    //setup the keyboard 
+}
+
+// JavaFX Java GUI Tutorial - 8 - Embedding Layouts
