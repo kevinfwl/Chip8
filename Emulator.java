@@ -64,7 +64,7 @@ public class Emulator{
     }
 
     public void fetch() {
-        this.opcode = (this.memory[this.pc] << 8 | (this.memory[this.pc + 1] & 0xff));
+        this.opcode = (this.memory[this.pc] << 8 | (this.memory[this.pc + 1] & 0xff)) & 0x0000ffff;
     }
 
     public void decrementTimer() {
@@ -99,19 +99,19 @@ public class Emulator{
     }
 
     public void printDebugger() {
-        String allRegs = "";
-        String allStack = "";
-        for (int i =0; i < 0x10; i++) {
-            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
-            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
-        }
-        System.out.print("Executing: ");
-        printOpcode(this.opcode);
-        System.out.println(allRegs);
-        System.out.println(allStack);
-        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
-        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
-        System.out.println();
+        // String allRegs = "";
+        // String allStack = "";
+        // for (int i =0; i < 0x10; i++) {
+        //     allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
+        //     allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+        // }
+        // System.out.print("Executing: ");
+        // printOpcode(this.opcode);
+        // System.out.println(allRegs);
+        // System.out.println(allStack);
+        // System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
+        // System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        // System.out.println();
     }
 
     //PRIVATE FUNCTIONS
@@ -163,69 +163,70 @@ public class Emulator{
     private void beep() {
     }
 
-    public boolean first =  false;
+    //Opcodes
 
     public void execute() throws Exception{
-        // if (this.delay >= -1) {
-        //     System.out.print("Executing: ");
-        //     printOpcode(this.opcode);
-        //     System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
-        //     System.out.println("delay: " + this.delay);
-        // }
         System.out.println("Current pc: 0x"  +  Integer.toHexString(this.pc));
-        if (this.V[0xA] != 0) first = true;
-        if (this.V[0xA] == 0 && first) System.exit(0);
 
-        switch ((this.opcode >> 12) & 0xf) {
-            case 0x0:
-                zero();
-                break;
-            case 0x1:
-                one();
-                break;
-            case 0x2:
-                two();
-                break;
-            case 0x3:
-                three();
-                break;
-            case 0x4:
-                four();
-                break;
-            case 0x5:
-                five();
-                break;
-            case 0x6:
-                six();
-                break;
-            case 0x7:
-                seven();
-                break;
-            case 0x8:
-                eight();
-                break;
-            case 0x9:
-                nine();
-                break;
-            case 0xA:
-                A();
-                break;
-            case 0xB:
-                B();
-                break;
-            case 0xC:
-                C();
-                break;
-            case 0xD:
-                D();
-                break;
-            case 0xE:
-                E();
-                break;
-            case 0xF:
-                F();
-                break;
-        }
+
+        // if (this.V[0xA] != 0) first = true;
+        // if (this.V[0xA] == 0 && first) System.exit(0);
+            try {
+                switch ((this.opcode >> 12) & 0x000f) {
+                    case 0x0:
+                        zero();
+                        break;
+                    case 0x1:
+                        one();
+                        break;
+                    case 0x2:
+                        two();
+                        break;
+                    case 0x3:
+                        three();
+                        break;
+                    case 0x4:
+                        four();
+                        break;
+                    case 0x5:
+                        five();
+                        break;
+                    case 0x6:
+                        six();
+                        break;
+                    case 0x7:
+                        seven();
+                        break;
+                    case 0x8:
+                        eight();
+                        break;
+                    case 0x9:
+                        nine();
+                        break;
+                    case 0xA:
+                        A();
+                        break;
+                    case 0xB:
+                        B();
+                        break;
+                    case 0xC:
+                        C();
+                        break;
+                    case 0xD:
+                        D();
+                        break;
+                    case 0xE:
+                        E();
+                        break;
+                    case 0xF:
+                        F();
+                        break;
+                }
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+ 
         printDebugger();
     }
 
@@ -262,7 +263,6 @@ public class Emulator{
         this.pc = (this.opcode & 0x0fff);
         // this.drawFlag = true;
     }
-
     private void three() {
         if (this.V[(this.opcode >>> 8) & 0xf] == (this.opcode & 0x00ff)) pc += 2;
         pc += 2;
@@ -296,6 +296,7 @@ public class Emulator{
         int y = (this.opcode >>> 4) & 0xf;
         switch (this.opcode & 0x000f) {
             case 0x0:
+                System.out.println("test");
                 this.V[x] = this.V[y];
                 break;
 
@@ -350,7 +351,7 @@ public class Emulator{
     }
 
     private void nine() {
-        if (this.V[(this.opcode >>> 12) & 0xf] != this.V[(this.opcode >>> 8) & 0xf]) this.pc += 2;
+        if (this.V[(this.opcode >>> 8) & 0xf] != this.V[(this.opcode >>> 4) & 0xf]) this.pc += 2;
         this.pc += 2;
     }
 
@@ -379,7 +380,7 @@ public class Emulator{
             
             for (int j = 0; j < 8; j++) {
                 int displayColor = (spriteRow >>> (7-j)) & 0x0001;
-                System.out.print(displayColor);
+                // System.out.print(displayColor);
                 
                 //turn VF to true 
                 if (displayColor != 0) {
@@ -388,7 +389,7 @@ public class Emulator{
                     this.fb[index] ^= true;
                 }
             }  
-            System.out.println("");        
+            // System.out.println("");        
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
@@ -461,13 +462,13 @@ public class Emulator{
                 break;
                 
             case 0x55:
-                for (int i = 0; i < x; i++) 
-                    this.memory[this.I + i] = this.V[i];
+                for (int i = 0; i <= x; i++) 
+                    this.memory[this.I + i] = this.V[i] & 0xff;
                 break;
 
             case 0x65:
-                for (int i = 0; i < x; i++) 
-                    this.V[i] = this.memory[this.I + i];            
+                for (int i = 0; i <= x; i++) 
+                    this.V[i] = this.memory[this.I + i] & 0xff;            
                 break;
             default:
                 throw new Exception("Err: F");

@@ -17,6 +17,7 @@ public class Main extends Application {
     private VBox vBox;
     private Screen screen;
     private Emulator emu;
+    private Keyboard keyboard;
 
     private boolean debugState;
 
@@ -31,8 +32,9 @@ public class Main extends Application {
         // System.out.println("as\t" + "okay");
         this.emu = Emulator.getInstance();
         this.screen = new Screen(this.emu);
+        this.keyboard = new Keyboard(this.emu);
         this.screen.init();
-        this.debugState = true;
+        this.debugState = false;
         try {
             this.emu.init();
             // this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\TETRIS");
@@ -46,9 +48,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        //init();
-
-        primaryStage.setTitle("Hello World!");
+        primaryStage.setTitle("Chip8 emulator");
         AnimationTimer timer = new AnimationTimer(){
             @Override
             public void handle(long now) {
@@ -57,11 +57,10 @@ public class Main extends Application {
                     if (emu.getDrawFlag()) {
                         screen.redraw();  
                         emu.setDrawFlag(false);              
-                    }
-    
-                    if (debugState) {
-                        stop();
-                    }
+                    }                    
+                    // if (debugState) {
+                    //     stop();
+                    // }
                 }
                 catch (Exception e) {
                     e.printStackTrace();
@@ -74,16 +73,19 @@ public class Main extends Application {
         root.getChildren().add(screen);
         
         Scene mainScene = new Scene(root, 640, 320);
-        mainScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+        
+        mainScene.setOnKeyPressed(this.keyboard);
+        mainScene.setOnKeyReleased(this.keyboard);
+        // mainScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
             
-            @Override
-            public void handle(KeyEvent event) {
-                switch (event.getCode()) {
-                    case ENTER:
-                        timer.start();
-                }
-            }
-        });
+        //     @Override
+        //     public void handle(KeyEvent event) {
+        //         switch (event.getCode()) {
+        //             case ENTER:
+        //                 timer.start();
+        //         }
+        //     }
+        // });
 
         primaryStage.setScene(mainScene);
         primaryStage.setResizable(false);
