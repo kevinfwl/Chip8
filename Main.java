@@ -35,7 +35,7 @@ public class Main extends Application {
         this.debugState = false;
         try {
             this.emu.init();
-            this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\tetris.rom");
+            this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\spaceInvaders.ch8");
         }
         catch (Exception e) {
             e.printStackTrace();
