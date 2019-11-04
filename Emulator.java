@@ -1,12 +1,17 @@
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.File;  
 import java.util.Random;
+
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.Media;  
+
 import java.io.IOException;
+import java.awt.Toolkit;
 
 public class Emulator{
     public static Emulator INSTANCE = new Emulator();
-
     private int opcode;
 
     private int[] memory;
@@ -17,7 +22,9 @@ public class Emulator{
     private boolean[] fb;
     private int sound;
     private int delay;
-    
+    private boolean canBeep;
+    private MediaPlayer beepSound;
+
     //stack
     private int[] stack;
     private int sp;
@@ -27,10 +34,11 @@ public class Emulator{
 
     private Emulator() {
         this.memory = new int[4096];
-        this.fb = new boolean[64 *32];
+        this.fb = new boolean[64 * 32];
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
+        this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
 
     public static Emulator getInstance() {
@@ -53,13 +61,16 @@ public class Emulator{
         this.sp = -1;
         this.pc = 0x200;
         this.drawFlag = false;
-        
-        //init fonset
+        this.canBeep = false;
+        //init fontset
         for (int i = 0; i < 80; i++) {
             this.memory[i] = Fontset.FONT_SET[i];
         }
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
+        }
+        for (int i = 0; i < 64 * 32; i++) {
+            this.fb[i] = false;
         }
     }
 
@@ -68,7 +79,12 @@ public class Emulator{
     }
 
     public void decrementTimer() {
-        if (this.sound == 0) beep();
+        if (this.sound == 0 && this.canBeep) {
+            this.beepSound.stop();
+            this.beepSound.play();
+            this.canBeep = false;
+        }
+        if (this.sound == 1) this.canBeep = true;
         if (this.sound > 0) this.sound--;
         if (this.delay > 0) this.delay--;
     }
@@ -99,19 +115,19 @@ public class Emulator{
     }
 
     public void printDebugger() {
-        String allRegs = "";
-        String allStack = "";
-        for (int i =0; i < 0x10; i++) {
-            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
-            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
-        }
-        System.out.print("Executing: ");
-        printOpcode(this.opcode);
-        System.out.println(allRegs);
-        System.out.println(allStack);
-        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
-        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
-        System.out.println();
+        // String allRegs = "";
+        // String allStack = "";
+        // for (int i =0; i < 0x10; i++) {
+        //     allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
+        //     allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+        // }
+        // System.out.print("Executing: ");
+        // printOpcode(this.opcode);
+        // System.out.println(allRegs);
+        // System.out.println(allStack);
+        // System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
+        // System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        // System.out.println();
     }
 
     //PRIVATE FUNCTIONS
@@ -161,23 +177,11 @@ public class Emulator{
     }
 
     private void beep() {
+        Toolkit.getDefaultToolkit().beep();
     }
 
-    public boolean first =  false;
-
+    //Opcodes
     public void execute() throws Exception{
-        // if (this.delay >= -1) {
-        //     System.out.print("Executing: ");
-        //     printOpcode(this.opcode);
-        //     System.out.println("0: " + this.V[0x0] + "           " + "1: " + this.V[0x1]);
-        //     System.out.println("delay: " + this.delay);
-        // }
-        System.out.println("Current pc: 0x"  +  Integer.toHexString(this.pc));
-        System.out.println("Current opcode 0x" + Integer.toHexString(this.opcode));
-        System.out.println("Current opcode 0x" + Integer.toHexString((this.opcode >> 12) & 0x000f));
-
-        // if (this.V[0xA] != 0) first = true;
-        // if (this.V[0xA] == 0 && first) System.exit(0);
             try {
                 switch ((this.opcode >> 12) & 0x000f) {
                     case 0x0:
@@ -205,7 +209,6 @@ public class Emulator{
                         seven();
                         break;
                     case 0x8:
-                        System.out.println("hit");
                         eight();
                         break;
                     case 0x9:
@@ -242,9 +245,7 @@ public class Emulator{
     private void zero() throws Exception{
         switch (this.opcode) {
             case 0x00E0:
-                for ( boolean pixel : this.fb) {
-                    pixel = false;
-                }
+                for (int i = 0; i < 2048; i++) this.fb[i] = false;
                 this.drawFlag = true;
                 this.pc += 2;
                 return;
@@ -267,7 +268,6 @@ public class Emulator{
     }
 
     private void two() {
-        System.out.println("two called");
         this.stack[++this.sp] = pc;
         this.pc = (this.opcode & 0x0fff);
         // this.drawFlag = true;
@@ -305,7 +305,6 @@ public class Emulator{
         int y = (this.opcode >>> 4) & 0xf;
         switch (this.opcode & 0x000f) {
             case 0x0:
-                System.out.println("test");
                 this.V[x] = this.V[y];
                 break;
 
@@ -389,7 +388,7 @@ public class Emulator{
             
             for (int j = 0; j < 8; j++) {
                 int displayColor = (spriteRow >>> (7-j)) & 0x0001;
-                System.out.print(displayColor);
+                // System.out.print(displayColor);
                 
                 //turn VF to true 
                 if (displayColor != 0) {
@@ -398,7 +397,7 @@ public class Emulator{
                     this.fb[index] ^= true;
                 }
             }  
-            System.out.println("");        
+            // System.out.println("");        
         }
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
