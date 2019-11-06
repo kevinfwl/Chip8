@@ -1,27 +1,19 @@
 import java.io.File;
-
-import javax.swing.Action;
-
 import javafx.animation.Animation;
-import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
+
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.scene.canvas.Canvas;
  
 public class Main extends Application {
 
@@ -128,27 +120,23 @@ public class Main extends Application {
         menuBar.getMenus().add(options);
         options.getItems().add(loadRom);
 
-
         VBox root = new VBox(menuBar, screen);
-        
         Scene mainScene = new Scene(root);
-        // Scene mainScene = new Scene(root);
-        // primaryStage.setHeight(this.screen.getHeight() + menuBar.getHeight());
-        // primaryStage.setWidth(this.screen.getWidth());
-        System.out.println(this.screen.getWidth());
-        System.out.println(this.screen.getHeight());
-        System.out.println(primaryStage.getWidth());
-        System.out.println(primaryStage.getHeight());
-        primaryStage.setMaxHeight(this.screen.getHeight() + menuBar.getHeight());
-        primaryStage.setMaxWidth(this.screen.getWidth());
 
         mainScene.setOnKeyPressed(this.keyboard);
         mainScene.setOnKeyReleased(this.keyboard);
 
         primaryStage.setScene(mainScene);
         primaryStage.setResizable(false);
+        //numbers are just hardcoded for now, from current jdk the window does not seem to wrap around canvas properly
+        //if resizeable is set to false
+        primaryStage.setHeight(371.333);
+        primaryStage.setWidth(644);
         primaryStage.show();
+        System.out.println(primaryStage.getHeight());
+        System.out.println(menuBar.getHeight());
 
+        System.out.println(primaryStage.getWidth());
         clockCycler.play();
     }
 

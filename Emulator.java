@@ -8,7 +8,6 @@ import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.Media;  
 
 import java.io.IOException;
-import java.awt.Toolkit;
 
 public class Emulator{
     public static Emulator INSTANCE = new Emulator();
@@ -175,11 +174,7 @@ public class Emulator{
     private char intToString(int hex){
         return "0123456789ABCDEF".toCharArray()[hex];
     }
-
-    private void beep() {
-        Toolkit.getDefaultToolkit().beep();
-    }
-
+    
     //Opcodes
     public void execute() throws Exception{
             try {

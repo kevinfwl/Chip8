@@ -19,7 +19,7 @@ public class Keyboard implements EventHandler<KeyEvent> {
 
     static {
         keyMap = new HashMap<KeyCode, Integer>(){
-            //call initializer on anonymous subclass to init the keymap (Hashmaps doesnt)
+            //call initializer on anonymous subclass to init the keymap (Hashmaps doesn't have init functions)
             {
                 put(KeyCode.DIGIT1, 1);
                 put(KeyCode.DIGIT2, 2);
@@ -47,7 +47,6 @@ public class Keyboard implements EventHandler<KeyEvent> {
 
     public Keyboard(Emulator emu) {
         this.emu = emu;
-        this.fresh = true;
     }
 
     @Override
