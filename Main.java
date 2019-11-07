@@ -1,46 +1,62 @@
+import java.io.File;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.layout.*;
-import javafx.stage.Stage;
 import javafx.scene.canvas.Canvas;
-import javafx.animation.*;
- 
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.util.Duration;
+
 public class Main extends Application {
 
-    //STATES
-
-    private HBox hBox;
-    private VBox vBox;
+    // STATES
     private Screen screen;
     private Emulator emu;
     private Keyboard keyboard;
-
     private boolean debugState;
+    private FileChooser fileChooser;
+    private File rom;
 
     public static void main(String[] args) {
         launch(args);
     }
-    
 
-    //automaticcally called in start function implicitly
+    // automaticcally called in start function implicitly
     public void init() {
-        // System.out.println("kasldj\t" + "okay");
-        // System.out.println("as\t" + "okay");
         this.emu = Emulator.getInstance();
         this.screen = new Screen(this.emu);
         this.keyboard = new Keyboard(this.emu);
         this.screen.init();
+        this.fileChooser = new FileChooser();
+        this.fileChooser.setInitialDirectory(new File("./roms"));
         this.debugState = false;
+        this.rom = null;
         try {
             this.emu.init();
-            // this.emu.load("D:\\side projects\\emulator\\Chip8\\roms\\TETRIS");
-            this.emu.load("C:\\personal\\Chip8\\roms\\TETRIS");
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
         }
-        catch (Exception e) {
+    }
+
+    public void reset() {
+        System.out.println("drawn rest");
+        try {
+            this.emu.init();
+            this.emu.load(this.rom.getAbsolutePath());
+            this.screen.init();
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
@@ -48,49 +64,95 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Chip8 emulator");
-        AnimationTimer timer = new AnimationTimer(){
+        // add debugger
+        // add load rom
+        // fix the pixels
+        // add the commandline incrementor and current machine state
+        // set timer to 60 fps
+        // file selection not working
+
+        primaryStage.setTitle("kevinfwl's CHIP8");
+
+        // new implementation of keyframe
+        KeyFrame frame = new KeyFrame(Duration.millis(4), new EventHandler<ActionEvent>() {
             @Override
-            public void handle(long now) {
+            public void handle(ActionEvent event) {
+                if (rom == null)
+                    return;
                 try {
                     emu.CPUcycle();
                     if (emu.getDrawFlag()) {
-                        screen.redraw();  
-                        emu.setDrawFlag(false);              
-                    }                    
-                    // if (debugState) {
-                    //     stop();
-                    // }
-                }
-                catch (Exception e) {
+                        screen.redraw();
+                        emu.setDrawFlag(false);
+                    }
+
+                    if (debugState) {
+                        stop();
+                    }
+                } catch (Exception e) {
                     e.printStackTrace();
                     System.exit(1);
                 }
             }
-        };
-        
-        StackPane root = new StackPane();
-        root.getChildren().add(screen);
-        
-        Scene mainScene = new Scene(root, 640, 320);
-        
+        });
+        Timeline clockCycler = new Timeline(frame);
+        clockCycler.setCycleCount(Animation.INDEFINITE);
+
+        // build the menu bar
+        MenuBar menuBar = new MenuBar();
+        menuBar.prefWidthProperty().bind(primaryStage.widthProperty());
+
+        Menu options = new Menu("Options");
+        MenuItem loadRom = new MenuItem("Load Rom");
+        loadRom.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                clockCycler.stop();
+                File newRom = fileChooser.showOpenDialog(primaryStage);
+                if (newRom != null) {
+                    rom = newRom;
+                    reset();
+                    clockCycler.play();
+                }
+            }
+        });
+
+        menuBar.getMenus().add(options);
+        options.getItems().add(loadRom);
+
+        Pane root = new StackPane(screen);
+        // root.setStyle("-fx-border-width: 25px; -fx-border-style: solid;
+        // -fx-border-color: #545454;");
+
+        BorderPane root2 = new BorderPane();
+        root2.setTop(menuBar);
+        root2.setCenter(screen);
+        Canvas bottom = new Canvas(100, 500);
+        GraphicsContext graphics = bottom.getGraphicsContext2D();
+        graphics.setFill(Color.BLACK);
+        graphics.fillRect(0, 0, 100, 500);
+
+        Scene mainScene = new Scene(root2);
+
         mainScene.setOnKeyPressed(this.keyboard);
         mainScene.setOnKeyReleased(this.keyboard);
-        // mainScene.setOnKeyPressed(new EventHandler<KeyEvent>() {
-            
-        //     @Override
-        //     public void handle(KeyEvent event) {
-        //         switch (event.getCode()) {
-        //             case ENTER:
-        //                 timer.start();
-        //         }
-        //     }
-        // });
 
         primaryStage.setScene(mainScene);
         primaryStage.setResizable(false);
+        //numbers are just hardcoded for now, from current jdk the window does not seem to wrap around canvas properly
+        //if resizeable is set to false
+
         primaryStage.show();
-        timer.start();
+        // System.out.println(primaryStage.getWidth());
+        // System.out.println(menuBar.getHeight());
+
+        // System.out.println(primaryStage.getWidth());
+        System.out.println(root2.getHeight());
+        System.out.println(root2.getWidth());
+        System.out.println(root.getHeight());
+        System.out.println(root.getWidth());
+        clockCycler.play();
     }
 
     //setup the keyboard 

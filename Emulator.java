@@ -1,9 +1,13 @@
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.io.File;  
 import java.util.Random;
+
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.Media;  
+
 import java.io.IOException;
-import javafx.application.Application;
 
 public class Emulator{
     public static Emulator INSTANCE = new Emulator();
@@ -17,7 +21,9 @@ public class Emulator{
     private boolean[] fb;
     private int sound;
     private int delay;
-    
+    private boolean canBeep;
+    private MediaPlayer beepSound;
+
     //stack
     private int[] stack;
     private int sp;
@@ -27,10 +33,11 @@ public class Emulator{
 
     private Emulator() {
         this.memory = new int[4096];
-        this.fb = new boolean[64 *32];
+        this.fb = new boolean[64 * 32];
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
+        this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
 
     public static Emulator getInstance() {
@@ -53,13 +60,16 @@ public class Emulator{
         this.sp = -1;
         this.pc = 0x200;
         this.drawFlag = false;
-        
-        //init fonset
+        this.canBeep = false;
+        //init fontset
         for (int i = 0; i < 80; i++) {
             this.memory[i] = Fontset.FONT_SET[i];
         }
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
+        }
+        for (int i = 0; i < 64 * 32; i++) {
+            this.fb[i] = false;
         }
     }
 
@@ -68,7 +78,12 @@ public class Emulator{
     }
 
     public void decrementTimer() {
-        if (this.sound == 0) beep();
+        if (this.sound == 0 && this.canBeep) {
+            this.beepSound.stop();
+            this.beepSound.play();
+            this.canBeep = false;
+        }
+        if (this.sound == 1) this.canBeep = true;
         if (this.sound > 0) this.sound--;
         if (this.delay > 0) this.delay--;
     }
@@ -159,18 +174,9 @@ public class Emulator{
     private char intToString(int hex){
         return "0123456789ABCDEF".toCharArray()[hex];
     }
-
-    private void beep() {
-    }
-
+    
     //Opcodes
-
     public void execute() throws Exception{
-        System.out.println("Current pc: 0x"  +  Integer.toHexString(this.pc));
-
-
-        // if (this.V[0xA] != 0) first = true;
-        // if (this.V[0xA] == 0 && first) System.exit(0);
             try {
                 switch ((this.opcode >> 12) & 0x000f) {
                     case 0x0:
@@ -234,9 +240,7 @@ public class Emulator{
     private void zero() throws Exception{
         switch (this.opcode) {
             case 0x00E0:
-                for ( boolean pixel : this.fb) {
-                    pixel = false;
-                }
+                for (int i = 0; i < 2048; i++) this.fb[i] = false;
                 this.drawFlag = true;
                 this.pc += 2;
                 return;
@@ -296,7 +300,6 @@ public class Emulator{
         int y = (this.opcode >>> 4) & 0xf;
         switch (this.opcode & 0x000f) {
             case 0x0:
-                System.out.println("test");
                 this.V[x] = this.V[y];
                 break;
 

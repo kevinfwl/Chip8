@@ -16,10 +16,10 @@ public class Keyboard implements EventHandler<KeyEvent> {
 
     public static Map<KeyCode, Integer> keyMap;
     private Emulator emu;
-    private boolean fresh;
+
     static {
         keyMap = new HashMap<KeyCode, Integer>(){
-            //call initializer on anonymous subclass to init the keymap (Hashmaps doesnt)
+            //call initializer on anonymous subclass to init the keymap (Hashmaps doesn't have init functions)
             {
                 put(KeyCode.DIGIT1, 1);
                 put(KeyCode.DIGIT2, 2);
@@ -47,29 +47,25 @@ public class Keyboard implements EventHandler<KeyEvent> {
 
     public Keyboard(Emulator emu) {
         this.emu = emu;
-        this.fresh = true;
     }
 
     @Override
     public void handle(KeyEvent e) {
         if (this.emu == null) return;
-
-        if (e.getEventType() == KeyEvent.KEY_PRESSED) {
-            if (fresh) {
-                System.out.println("pressed: " + e.getCode());
-                fresh = false;
+        try  {
+            if (e.getEventType() == KeyEvent.KEY_PRESSED) {
+                if (keyMap.get(e.getCode()) != null)
+                    this.emu.setKeyOn(keyMap.get(e.getCode()));
             }
-            this.emu.setKeyOn(keyMap.get(e.getCode()));
+    
+            if (e.getEventType() ==  KeyEvent.KEY_RELEASED) {
+                if (keyMap.get(e.getCode()) != null)
+                    this.emu.setKeyOff(keyMap.get(e.getCode()));
+            }
+        }
+        catch (Exception exception) {
+            //Exception occurs if Key is not found
         }
 
-
-        if (e.getEventType() ==  KeyEvent.KEY_RELEASED) {
-
-            System.out.println("released: " + e.getCode());
-            fresh = true;
-            this.emu.setKeyOff(keyMap.get(e.getCode()));
-        }
-
-        
     }
 }
