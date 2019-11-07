@@ -12,7 +12,7 @@ class Screen extends Canvas {
     
 
     Screen(Emulator emu) {
-        super(700, 400);
+        super(640, 320);
         this.emu = emu;
         this.gc = getGraphicsContext2D();
         // setHeight(320);
@@ -20,10 +20,10 @@ class Screen extends Canvas {
     }
     //initializes the screen and sets the fill color
     public void init() {
-        gc.setFill(Color.RED);
+        gc.setFill(Color.BLACK);
         System.out.println("drawn");
         
-        gc.fillRect(0, 0, 896, 448);
+        gc.fillRect(0, 0, 640, 320);
         gc.setFill(Color.BLACK);
 
         gc.fillRect(0, 0, 10, 10);
@@ -47,7 +47,7 @@ class Screen extends Canvas {
                 else {
                     this.gc.setFill(Color.BEIGE);
                 }
-                this.gc.fillRect(i, j, 10, 10);                
+                this.gc.fillRect(i* 10, j * 10, 10, 10);                
             }
         }
     }
