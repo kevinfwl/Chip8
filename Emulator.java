@@ -411,7 +411,7 @@ public class Emulator{
     }
 
     private void F() throws Exception {
-        int x = (this.opcode >>> 8) & 0x000f;
+        int x = (this.opcode >>> 8) & 0x0000000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
                 this.V[x] = this.delay;
@@ -419,15 +419,14 @@ public class Emulator{
 
             case 0x0A:
                 boolean keypressed =  false;
-                for (int i = 0; i < 0xf; i++) {
+                for (int i = 0; i <= 0xf; i++) {
                     if (this.keyState[i]) {
                         this.V[x] = i;
-                        keypressed  = true;
+                        keypressed = true;
                     }
                 }
                 if(keypressed) break;
-                return;
-
+                else return;
             case 0x15:
                 this.delay = this.V[x];
                 break;
