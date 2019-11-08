@@ -74,7 +74,7 @@ public class Main extends Application {
         primaryStage.setTitle("kevinfwl's CHIP8");
 
         // new implementation of keyframe
-        KeyFrame frame = new KeyFrame(Duration.millis(4), new EventHandler<ActionEvent>() {
+        KeyFrame frame = new KeyFrame(Duration.millis(2), new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 if (rom == null)

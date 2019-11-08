@@ -13,13 +13,13 @@ public class Emulator{
     //init singleton
     public static Emulator INSTANCE = new Emulator();
 
-    public static int SCHIP8_WIDTH = 128;
-    public static int SCHIP8_HEIGHT = 64;
-    public static int CHIP8_WIDTH = 64;
-    public static int CHIP8_HEIGHT = 32;
+    public static final int SCHIP8_WIDTH = 128;
+    public static final int SCHIP8_HEIGHT = 64;
+    public static final int CHIP8_WIDTH = 64;
+    public static final int CHIP8_HEIGHT = 32;
 
     Keyboard keyboardObserver;
-    Screen screenObserver;
+    Screen screenSubject;
 
     private int opcode;
 
@@ -45,10 +45,11 @@ public class Emulator{
     private Emulator() {
         this.memory = new int[4096];
         this.fb = new boolean[CHIP8_WIDTH * CHIP8_HEIGHT];
+        // System.out.println(CHIP8_HEIGHT);
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
-        this.RPL = new int[8];
+        this.RFL = new int[8];
         this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
 
@@ -80,6 +81,7 @@ public class Emulator{
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
         }
+        System.out.println(this.fb.length);
         for (int i = 0; i < 64 * 32; i++) {
             this.fb[i] = false;
         }
@@ -489,12 +491,12 @@ public class Emulator{
                 this.I = this.V[x] * 10;
                 break;
             case 0x75:
-                if (x > 7) throw Exception("Err: 0XF385 x is over 7 for RPL store");
+                if (x > 7) throw new Exception("Err: 0XF385 x is over 7 for RPL store");
                 for (int i = 0; i <= x; i++)
-                    this.RFL = this.V[i];
+                    this.RFL[i] = this.V[i];
                 break;
             case 0x85:
-                if (x > 7) throw Exception("Err: 0XF385 x is over 7 for RPL read");
+                if (x > 7) throw new Exception("Err: 0XF385 x is over 7 for RPL read");
                 for (int i = 0; i <= x; i++)
                     this.V[i] = this.RFL[i];
                 break;

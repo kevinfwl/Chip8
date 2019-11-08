@@ -15,7 +15,7 @@ public class Keyboard implements EventHandler<KeyEvent> {
      */
 
     public static Map<KeyCode, Integer> keyMap;
-    private Emulator emu;
+    private Emulator observer;
 
     static {
         keyMap = new HashMap<KeyCode, Integer>(){
@@ -42,25 +42,25 @@ public class Keyboard implements EventHandler<KeyEvent> {
     }
 
     public Keyboard() {
-        this.emu = null;
+        this.observer = null;
     }
 
     public Keyboard(Emulator emu) {
-        this.emu = emu;
+        this.observer = emu;
     }
 
     @Override
     public void handle(KeyEvent e) {
-        if (this.emu == null) return;
+        if (this.observer == null) return;
         try  {
             if (e.getEventType() == KeyEvent.KEY_PRESSED) {
                 if (keyMap.get(e.getCode()) != null)
-                    this.emu.setKeyOn(keyMap.get(e.getCode()));
+                    this.observer.setKeyOn(keyMap.get(e.getCode()));
             }
     
             if (e.getEventType() ==  KeyEvent.KEY_RELEASED) {
                 if (keyMap.get(e.getCode()) != null)
-                    this.emu.setKeyOff(keyMap.get(e.getCode()));
+                    this.observer.setKeyOff(keyMap.get(e.getCode()));
             }
         }
         catch (Exception exception) {
