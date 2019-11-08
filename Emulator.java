@@ -10,11 +10,23 @@ import javafx.scene.media.Media;
 import java.io.IOException;
 
 public class Emulator{
+    //init singleton
     public static Emulator INSTANCE = new Emulator();
+
+    public static int SCHIP8_WIDTH = 128;
+    public static int SCHIP8_HEIGHT = 64;
+    public static int CHIP8_WIDTH = 64;
+    public static int CHIP8_HEIGHT = 32;
+
+    Keyboard keyboardObserver;
+    Screen screenObserver;
+
     private int opcode;
 
     private int[] memory;
     private int[] V;
+    //used for RFL Flags
+    private int[] RFL;
     private int pc;
     private int I;
     
@@ -24,7 +36,6 @@ public class Emulator{
     private boolean canBeep;
     private MediaPlayer beepSound;
 
-    //stack
     private int[] stack;
     private int sp;
 
@@ -33,10 +44,11 @@ public class Emulator{
 
     private Emulator() {
         this.memory = new int[4096];
-        this.fb = new boolean[64 * 32];
+        this.fb = new boolean[CHIP8_WIDTH * CHIP8_HEIGHT];
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
+        this.RPL = new int[8];
         this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
 
@@ -63,7 +75,7 @@ public class Emulator{
         this.canBeep = false;
         //init fontset
         for (int i = 0; i < 80; i++) {
-            this.memory[i] = Fontset.FONT_SET[i];
+            this.memory[i] = Fontset.FONT_SET_CHIP8[i];
         }
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
@@ -414,7 +426,7 @@ public class Emulator{
     }
 
     private void F() throws Exception {
-        int x = (this.opcode >>> 8) & 0x000f;
+        int x = (this.opcode >>> 8) & 0x0000000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
                 this.V[x] = this.delay;
@@ -422,15 +434,14 @@ public class Emulator{
 
             case 0x0A:
                 boolean keypressed =  false;
-                for (int i = 0; i < 0xf; i++) {
+                for (int i = 0; i <= 0xf; i++) {
                     if (this.keyState[i]) {
                         this.V[x] = i;
-                        keypressed  = true;
+                        keypressed = true;
                     }
                 }
                 if(keypressed) break;
-                return;
-
+                else return;
             case 0x15:
                 this.delay = this.V[x];
                 break;
@@ -473,8 +484,22 @@ public class Emulator{
                 for (int i = 0; i <= x; i++) 
                     this.V[i] = this.memory[this.I + i] & 0xff;            
                 break;
+            //SUPER CHIP 8 opcodes
+            case 0x30:
+                this.I = this.V[x] * 10;
+                break;
+            case 0x75:
+                if (x > 7) throw Exception("Err: 0XF385 x is over 7 for RPL store");
+                for (int i = 0; i <= x; i++)
+                    this.RFL = this.V[i];
+                break;
+            case 0x85:
+                if (x > 7) throw Exception("Err: 0XF385 x is over 7 for RPL read");
+                for (int i = 0; i <= x; i++)
+                    this.V[i] = this.RFL[i];
+                break;
             default:
-                throw new Exception("Err: F");
+                throw new Exception("Err: F opcode option is not found");
         }
         this.pc += 2;
     }
