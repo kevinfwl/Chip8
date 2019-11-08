@@ -23,8 +23,9 @@ class Screen extends Canvas {
         gc.setFill(Color.BLACK);
         System.out.println("drawn");
         
+        gc.setFill(Color.rgb(137, 143, 139));
         gc.fillRect(0, 0, 640, 320);
-        gc.setFill(Color.BLACK);
+        
 
         gc.fillRect(0, 0, 10, 10);
         gc.fillRect(0, 300, 10, 10);
@@ -42,10 +43,10 @@ class Screen extends Canvas {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 32; j++) {
                 if (this.emu.getPixel(i, j)) {
-                    this.gc.setFill(Color.BLACK);
+                    this.gc.setFill(Color.rgb(30, 39, 46));
                 }
                 else {
-                    this.gc.setFill(Color.BEIGE);
+                    this.gc.setFill(Color.rgb(137, 143, 139));
                 }
                 this.gc.fillRect(i* 10, j * 10, 10, 10);                
             }
