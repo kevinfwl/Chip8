@@ -19,7 +19,7 @@ public class Emulator{
     public static final int CHIP8_HEIGHT = 32;
 
     Keyboard keyboardObserver;
-    Screen screenSubject;
+    Screen screenController;
 
     private int opcode;
 
@@ -42,7 +42,7 @@ public class Emulator{
     private boolean drawFlag;
     private boolean[] keyState;
 
-    private Emulator() {
+    public Emulator() {
         this.memory = new int[4096];
         this.fb = new boolean[CHIP8_WIDTH * CHIP8_HEIGHT];
         // System.out.println(CHIP8_HEIGHT);
@@ -52,9 +52,11 @@ public class Emulator{
         this.RFL = new int[8];
         this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
-
-    public static Emulator getInstance() {
-        return INSTANCE;
+    
+    public Emulator(Screen screen, Keyboard keyboard) {
+        this();
+        this.keyboardObserver = keyboard;
+        this.screenController = screen;
     }
 
 
@@ -253,17 +255,29 @@ public class Emulator{
     //private opcode functions
     private void zero() throws Exception{
         switch (this.opcode) {
-            case 0x00E0:
+            case 0xE0:
                 for (int i = 0; i < 2048; i++) this.fb[i] = false;
                 this.drawFlag = true;
                 this.pc += 2;
                 return;
-            case 0x00EE:
+            case 0xEE:
                 this.pc = this.stack[this.sp];
                 this.sp--;
                 this.pc += 2;
                 this.drawFlag = true;
                 return;
+
+            //SCHIP8 OPCODES
+            case 0xFB:
+                break;
+            case 0xFC:
+                break;
+            case 0xFD:
+                break;
+            case 0xFE:
+                break;
+            case 0xFF:
+                break;
             default:
                 this.pc = (short) (this.opcode & 0x0fff);
                 throw new Exception("err");

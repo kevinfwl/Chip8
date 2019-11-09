@@ -21,6 +21,8 @@ import javafx.util.Duration;
 public class Main extends Application {
 
     // STATES
+    
+
     private Screen screen;
     private Emulator emu;
     private Keyboard keyboard;
@@ -37,6 +39,7 @@ public class Main extends Application {
         this.emu = Emulator.getInstance();
         this.screen = new Screen(this.emu);
         this.keyboard = new Keyboard(this.emu);
+        
         this.screen.init();
         this.fileChooser = new FileChooser();
         this.fileChooser.setInitialDirectory(new File("./roms"));
@@ -105,7 +108,6 @@ public class Main extends Application {
         Menu options = new Menu("Options");
         MenuItem loadRom = new MenuItem("Load Rom");
         loadRom.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
                 clockCycler.stop();
@@ -144,10 +146,7 @@ public class Main extends Application {
         //if resizeable is set to false
 
         primaryStage.show();
-        // System.out.println(primaryStage.getWidth());
-        // System.out.println(menuBar.getHeight());
 
-        // System.out.println(primaryStage.getWidth());
         System.out.println(root2.getHeight());
         System.out.println(root2.getWidth());
         System.out.println(root.getHeight());
