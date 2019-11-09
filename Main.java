@@ -121,17 +121,9 @@ public class Main extends Application {
         menuBar.getMenus().add(options);
         options.getItems().add(loadRom);
 
-        Pane root = new StackPane(screen);
-        // root.setStyle("-fx-border-width: 25px; -fx-border-style: solid;
-        // -fx-border-color: #545454;");
-
         BorderPane root2 = new BorderPane();
         root2.setTop(menuBar);
         root2.setCenter(screen);
-        Canvas bottom = new Canvas(100, 500);
-        GraphicsContext graphics = bottom.getGraphicsContext2D();
-        graphics.setFill(Color.BLACK);
-        graphics.fillRect(0, 0, 100, 500);
 
         Scene mainScene = new Scene(root2);
 
@@ -144,14 +136,6 @@ public class Main extends Application {
         //if resizeable is set to false
 
         primaryStage.show();
-        // System.out.println(primaryStage.getWidth());
-        // System.out.println(menuBar.getHeight());
-
-        // System.out.println(primaryStage.getWidth());
-        System.out.println(root2.getHeight());
-        System.out.println(root2.getWidth());
-        System.out.println(root.getHeight());
-        System.out.println(root.getWidth());
         clockCycler.play();
     }
 

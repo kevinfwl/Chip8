@@ -26,16 +26,16 @@ class Screen extends Canvas {
         gc.fillRect(0, 0, 640, 320);
         gc.setFill(Color.BLACK);
 
-        gc.fillRect(0, 0, 10, 10);
-        gc.fillRect(0, 300, 10, 10);
-        gc.fillRect(0, 260, 10, 10);
+        // gc.fillRect(0, 0, 10, 10);
+        // gc.fillRect(0, 300, 10, 10);
+        // gc.fillRect(0, 260, 10, 10);
 
-        gc.fillRect(0, 310, 10, 10);
+        // gc.fillRect(0, 310, 10, 10);
 
-        gc.fillRect(630, 300, 10, 10);
-        gc.fillRect(630, 260, 10, 10);
+        // gc.fillRect(630, 300, 10, 10);
+        // gc.fillRect(630, 260, 10, 10);
 
-        gc.fillRect(630, 310, 10, 10);
+        // gc.fillRect(630, 310, 10, 10);
     }
 
     public void redraw() {
