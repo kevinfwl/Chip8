@@ -10,38 +10,61 @@ import javafx.scene.media.Media;
 import java.io.IOException;
 
 public class Emulator{
+    //init singleton
     public static Emulator INSTANCE = new Emulator();
+
+    public static final int SCHIP8_WIDTH = 128;
+    public static final int SCHIP8_HEIGHT = 64;
+    public static final int CHIP8_WIDTH = 64;
+    public static final int CHIP8_HEIGHT = 32;
+
+    public static final int SCHIP8_SPEED = 500;
+    public static final int CHIP8_SPEED = 500;
+
+    Keyboard keyboardObserver;
+    Screen screenController;
+
     private int opcode;
 
     private int[] memory;
     private int[] V;
+    //used for RFL Flags
+    private int[] RFL;
     private int pc;
     private int I;
     
     private boolean[] fb;
+    private int fbx;
+    private int fby;
     private int sound;
     private int delay;
+
     private boolean canBeep;
     private MediaPlayer beepSound;
 
-    //stack
     private int[] stack;
     private int sp;
 
     private boolean drawFlag;
     private boolean[] keyState;
 
-    private Emulator() {
+    public Emulator() {
         this.memory = new int[4096];
-        this.fb = new boolean[64 * 32];
+        this.fb = new boolean[CHIP8_WIDTH * CHIP8_HEIGHT];
+        // System.out.println(CHIP8_HEIGHT);
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
+        this.RFL = new int[8];
+        this.fbx = CHIP8_WIDTH;
+        this.fby = CHIP8_HEIGHT;
         this.beepSound = new MediaPlayer(new Media(new File("beep.wav").toURI().toString()));
     }
-
-    public static Emulator getInstance() {
-        return INSTANCE;
+    
+    public Emulator(Screen screen, Keyboard keyboard) {
+        this();
+        this.keyboardObserver = keyboard;
+        this.screenController = screen;
     }
 
 
@@ -63,11 +86,12 @@ public class Emulator{
         this.canBeep = false;
         //init fontset
         for (int i = 0; i < 80; i++) {
-            this.memory[i] = Fontset.FONT_SET[i];
+            this.memory[i] = Fontset.FONT_SET_CHIP8[i];
         }
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
         }
+        System.out.println(this.fb.length);
         for (int i = 0; i < 64 * 32; i++) {
             this.fb[i] = false;
         }
@@ -238,22 +262,56 @@ public class Emulator{
 
     //private opcode functions
     private void zero() throws Exception{
+        //0x0NNN instruction
+        if  ((this.opcode >>> 4) != 0xE && (this.opcode >>> 4) != 0xF && (this.opcode >>> 4) != 0xC) {
+            this.pc = (short) (this.opcode & 0x0fff);
+            return;
+        }
+
         switch (this.opcode) {
-            case 0x00E0:
+            case 0xE0:
                 for (int i = 0; i < 2048; i++) this.fb[i] = false;
-                this.drawFlag = true;
-                this.pc += 2;
-                return;
-            case 0x00EE:
+                break;
+            case 0xEE:
                 this.pc = this.stack[this.sp];
                 this.sp--;
-                this.pc += 2;
-                this.drawFlag = true;
-                return;
+                break;
+            //SCHIP8 OPCODES
+            // 00CN: Scroll display N lines down
+            // 00FB: Scroll display 4 pixels right
+            // 00FC: Scroll display 4 pixels left
+            // 00FD: Exit CHIP interpreter
+            // 00FE: Disable extended screen mode
+            // 00FF: Enable extended screen mode for full-screen graphics
+            case 0xFB:
+                // for (int y = 0; i < this.fbx; i++) {
+                //     for (int x = 3; x <     )
+                //     for ()
+                // }
+                break;
+            case 0xFC:
+                break;
+            case 0xFD:
+                System.exit(0);
+                break;
+            case 0xFE:
+                this.fbx = SCHIP8_HEIGHT;
+                this.fby = SCHIP8_WIDTH;
+                this.fb =  new boolean[SCHIP8_HEIGHT *  SCHIP8_WIDTH];
+                if (screenController != null) screenController.resize(SCHIP8_HEIGHT, SCHIP8_WIDTH);
+                break;
+            case 0xFF:
+                this.fbx = CHIP8_HEIGHT;
+                this.fby = CHIP8_WIDTH;
+                this.fb =  new boolean[CHIP8_HEIGHT *  CHIP8_WIDTH];
+                if (screenController != null) screenController.resize(CHIP8_HEIGHT, CHIP8_WIDTH);
+                break;
+            //0x00CN - scroll down N
             default:
-                this.pc = (short) (this.opcode & 0x0fff);
-                throw new Exception("err");
+                
         }
+        this.drawFlag = true;
+        this.pc += 2;
     }
 
 
@@ -414,7 +472,7 @@ public class Emulator{
     }
 
     private void F() throws Exception {
-        int x = (this.opcode >>> 8) & 0x000f;
+        int x = (this.opcode >>> 8) & 0x0000000f;
         switch (this.opcode & 0x00ff) {
             case 0x07:
                 this.V[x] = this.delay;
@@ -422,15 +480,14 @@ public class Emulator{
 
             case 0x0A:
                 boolean keypressed =  false;
-                for (int i = 0; i < 0xf; i++) {
+                for (int i = 0; i <= 0xf; i++) {
                     if (this.keyState[i]) {
                         this.V[x] = i;
-                        keypressed  = true;
+                        keypressed = true;
                     }
                 }
                 if(keypressed) break;
-                return;
-
+                else return;
             case 0x15:
                 this.delay = this.V[x];
                 break;
@@ -473,8 +530,22 @@ public class Emulator{
                 for (int i = 0; i <= x; i++) 
                     this.V[i] = this.memory[this.I + i] & 0xff;            
                 break;
+            //SUPER CHIP 8 opcodes
+            case 0x30:
+                this.I = this.V[x] * 10;
+                break;
+            case 0x75:
+                if (x > 7) throw new Exception("Err: 0XF385 x is over 7 for RPL store");
+                for (int i = 0; i <= x; i++)
+                    this.RFL[i] = this.V[i];
+                break;
+            case 0x85:
+                if (x > 7) throw new Exception("Err: 0XF385 x is over 7 for RPL read");
+                for (int i = 0; i <= x; i++)
+                    this.V[i] = this.RFL[i];
+                break;
             default:
-                throw new Exception("Err: F");
+                throw new Exception("Err: F opcode option is not found");
         }
         this.pc += 2;
     }

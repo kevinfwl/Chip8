@@ -4,12 +4,11 @@ import javafx.scene.canvas.GraphicsContext;
 
 class Screen extends Canvas {
 
-    public static int SCREEN_SIZE_X = 640;
-    public static int SCREEN_SIZE_Y = 320;
+    public static Color ON_PIXEL_COLOR = Color.rgb(30, 39, 46);
+    public static Color OFF_PIXEL_COLOR = Color.rgb(137, 143, 139);
 
     private Emulator emu;
     private GraphicsContext gc;
-    
 
     Screen(Emulator emu) {
         super(640, 320);
@@ -20,11 +19,9 @@ class Screen extends Canvas {
     }
     //initializes the screen and sets the fill color
     public void init() {
-        gc.setFill(Color.BLACK);
-        System.out.println("drawn");
+        gc.setFill(OFF_PIXEL_COLOR);
+        gc.fillRect(0, 0, this.getWidth(), this.getHeight());
         
-        gc.fillRect(0, 0, 640, 320);
-        gc.setFill(Color.BLACK);
 
         // gc.fillRect(0, 0, 10, 10);
         // gc.fillRect(0, 300, 10, 10);
@@ -38,16 +35,22 @@ class Screen extends Canvas {
         // gc.fillRect(630, 310, 10, 10);
     }
 
+    public void resize(double height, double width) {
+        this.setHeight(height);
+        this.setWidth(width);
+        this.init();
+    }
+
     public void redraw() {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 32; j++) {
-                if (this.emu.getPixel(i, j)) {
-                    this.gc.setFill(Color.BLACK);
+        for (int x = 0; x < this.getWidth() / 10; x++) {
+            for (int y = 0; y < this.getHeight() / 10; y++) {
+                if (this.emu.getPixel(x, y)) {
+                    this.gc.setFill(ON_PIXEL_COLOR);
                 }
                 else {
-                    this.gc.setFill(Color.BEIGE);
+                    this.gc.setFill(OFF_PIXEL_COLOR);
                 }
-                this.gc.fillRect(i* 10, j * 10, 10, 10);                
+                this.gc.fillRect(x* 10, y * 10, 10, 10);                
             }
         }
     }

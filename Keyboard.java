@@ -64,8 +64,6 @@ public class Keyboard implements EventHandler<KeyEvent> {
             }
         }
         catch (Exception exception) {
-            //Exception occurs if Key is not found
         }
-
     }
 }

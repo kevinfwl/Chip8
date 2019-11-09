@@ -6,14 +6,11 @@ import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
 import javafx.scene.control.MenuItem;
 
 import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -34,7 +31,7 @@ public class Main extends Application {
 
     // automaticcally called in start function implicitly
     public void init() {
-        this.emu = Emulator.getInstance();
+        this.emu = new Emulator();
         this.screen = new Screen(this.emu);
         this.keyboard = new Keyboard(this.emu);
         this.screen.init();
