@@ -37,7 +37,7 @@ public class Main extends Application {
         this.screen.init();
         this.fileChooser = new FileChooser();
         this.fileChooser.setInitialDirectory(new File("./roms"));
-        this.debugState = false;
+        this.debugState = false ;
         this.rom = null;
         try {
             this.emu.init();
@@ -48,7 +48,6 @@ public class Main extends Application {
     }
 
     public void reset() {
-        System.out.println("drawn rest");
         try {
             this.emu.init();
             this.emu.load(this.rom.getAbsolutePath());

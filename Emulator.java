@@ -97,6 +97,10 @@ public class Emulator{
         }
     }
 
+    public void setScreen(Screen screen) {
+        this.screenController = screen;
+    }
+
     public void fetch() {
         this.opcode = (this.memory[this.pc] << 8 | (this.memory[this.pc + 1] & 0xff)) & 0x0000ffff;
     }
@@ -138,19 +142,19 @@ public class Emulator{
     }
 
     public void printDebugger() {
-        // String allRegs = "";
-        // String allStack = "";
-        // for (int i =0; i < 0x10; i++) {
-        //     allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
-        //     allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
-        // }
-        // System.out.print("Executing: ");
-        // printOpcode(this.opcode);
-        // System.out.println(allRegs);
-        // System.out.println(allStack);
-        // System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
-        // System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
-        // System.out.println();
+        String allRegs = "";
+        String allStack = "";
+        for (int i =0; i < 0x10; i++) {
+            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
+            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+        }
+        System.out.print("Executing: ");
+        printOpcode(this.opcode);
+        System.out.println(allRegs);
+        System.out.println(allStack);
+        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
+        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        System.out.println();
     }
 
     //PRIVATE FUNCTIONS
@@ -189,6 +193,14 @@ public class Emulator{
 
     public boolean getDrawFlag() {
         return this.drawFlag;
+    }
+
+    public int getScreenWidth() {
+        return this.fbx;
+    }
+
+    public int getScreenHeight() {
+        return this.fby;
     }
 
     public void setDrawFlag(boolean flag) {
@@ -284,31 +296,50 @@ public class Emulator{
             // 00FE: Disable extended screen mode
             // 00FF: Enable extended screen mode for full-screen graphics
             case 0xFB:
-                // for (int y = 0; i < this.fbx; i++) {
-                //     for (int x = 3; x <     )
-                //     for ()
-                // }
+                for (int y = 0; y < this.fby; y++) {
+                    for (int x = this.fbx - 5; x >= 0; x--) {
+                        this.fb[y * this.fbx + x] = this.fb[y *  this.fbx + (x - 4)];
+                    }
+                    for (int x = 0; x < 4; x++) {
+                        this.fb[y * this.fbx + x] = false;
+                    }
+                }
                 break;
             case 0xFC:
+                for (int y = 0; y < this.fby; y++) {
+                    for (int x = 0; x < this.fbx - 4; x++) {
+                        this.fb[y * this.fbx + x] = this.fb[y *  this.fbx + (x + 4)];
+                    }
+                    for (int x = 0; x < this.fbx - 4; x++) {
+                        this.fb[y * this.fbx + x] = false;
+                    }
+                }
                 break;
             case 0xFD:
                 System.exit(0);
                 break;
             case 0xFE:
-                this.fbx = SCHIP8_HEIGHT;
-                this.fby = SCHIP8_WIDTH;
-                this.fb =  new boolean[SCHIP8_HEIGHT *  SCHIP8_WIDTH];
-                if (screenController != null) screenController.resize(SCHIP8_HEIGHT, SCHIP8_WIDTH);
+                this.fbx = CHIP8_WIDTH;
+                this.fby = CHIP8_HEIGHT;
+                this.fb =  new boolean[CHIP8_HEIGHT *  CHIP8_WIDTH];
+                for (int i = 0; i < 80; i++) {
+                    this.memory[i] = Fontset.FONT_SET_CHIP8[i];
+                }
+                if (screenController != null) screenController.resize();
                 break;
             case 0xFF:
-                this.fbx = CHIP8_HEIGHT;
-                this.fby = CHIP8_WIDTH;
-                this.fb =  new boolean[CHIP8_HEIGHT *  CHIP8_WIDTH];
-                if (screenController != null) screenController.resize(CHIP8_HEIGHT, CHIP8_WIDTH);
+                System.out.println("SIr1");
+                this.fbx = SCHIP8_WIDTH;
+                this.fby = SCHIP8_HEIGHT;
+                this.fb =  new boolean[SCHIP8_HEIGHT *  SCHIP8_WIDTH];
+                for (int i = 0; i < Fontset.FONT_SET_SCHIP8.length; i++) {
+                    this.memory[i] = Fontset.FONT_SET_SCHIP8[i];
+                }
+                if (screenController != null) screenController.resize();
                 break;
             //0x00CN - scroll down N
             default:
-                
+                ///DO THIS SHT
         }
         this.drawFlag = true;
         this.pc += 2;
@@ -366,7 +397,6 @@ public class Emulator{
                 break;
 
             case 0x2:
-
                 this.V[x] = this.V[x]  & this.V[y];
                 break;
 
@@ -431,27 +461,37 @@ public class Emulator{
     }
 
     private void D() {
+        //need to implement DXY0
+        
         int n = this.opcode & 0xf; 
         int y = this.V[(this.opcode >>> 4) & 0xf];
         int x = this.V[(this.opcode >>> 8) & 0xf];
+        int spriteSize = 8;
         boolean turnedOff = false;
+        
+        if  (n == 0)  {
+            spriteSize = 16;
+            n = 16;
+        }
 
         for (int i = 0; i < n; i++) {
             int spriteRow = memory[I + i];
-            
-            for (int j = 0; j < 8; j++) {
-                int displayColor = (spriteRow >>> (7-j)) & 0x0001;
-                // System.out.print(displayColor);
+            if (n == 16) spriteRow = ((memory[I + i * 2] << 4) & 0xff00) | (memory[I + i * 2 + 1] & 0xff);
+
+            for (int j = 0; j < spriteSize; j++) {
+                int displayColor = (spriteRow >>> ((spriteSize - 1) - j)) & 0x0001;
+                System.out.print(displayColor);
                 
                 //turn VF to true 
                 if (displayColor != 0) {
-                    int index = ( x + j + (y + i) * 64 ) % 2048;
+                    int index = ( x + j + (y + i) * this.fbx ) % (this.fb.length);
                     if ((displayColor == 1) && this.fb[index]) turnedOff = true;
                     this.fb[index] ^= true;
                 }
             }  
-            // System.out.println("");        
+            System.out.println("");   
         }
+
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
         this.pc += 2;
@@ -460,7 +500,7 @@ public class Emulator{
     private void E() {
         int x = (this.opcode >>> 8) & 0xf; 
         switch (this.opcode & 0xff) {
-            case 0x9E:
+            case 0x9E: 
                 if (this.keyState[this.V[x]]) pc += 2; 
                 break;
 

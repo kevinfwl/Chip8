@@ -6,23 +6,22 @@ class Screen extends Canvas {
 
     public static Color ON_PIXEL_COLOR = Color.rgb(30, 39, 46);
     public static Color OFF_PIXEL_COLOR = Color.rgb(137, 143, 139);
-
+    public int pixelSize;
     private Emulator emu;
     private GraphicsContext gc;
 
     Screen(Emulator emu) {
-        super(640, 320);
+        super(emu.getScreenWidth() * 10, emu.getScreenHeight() * 10);
         this.emu = emu;
+        this.emu.setScreen(this);
         this.gc = getGraphicsContext2D();
-        // setHeight(320);
-        // setWidth(640);
+        this.pixelSize = 10;
     }
     //initializes the screen and sets the fill color
     public void init() {
         gc.setFill(OFF_PIXEL_COLOR);
         gc.fillRect(0, 0, this.getWidth(), this.getHeight());
-        
-
+    
         // gc.fillRect(0, 0, 10, 10);
         // gc.fillRect(0, 300, 10, 10);
         // gc.fillRect(0, 260, 10, 10);
@@ -35,22 +34,25 @@ class Screen extends Canvas {
         // gc.fillRect(630, 310, 10, 10);
     }
 
-    public void resize(double height, double width) {
-        this.setHeight(height);
-        this.setWidth(width);
+    public void resize() {
+        if (this.emu == null) return;
+        // this.setHeight(this.emu.getScreenHeight() * pixelSize);
+        // this.setWidth(this.emu.getScreenWidth() * pixelSize);
+        this.pixelSize = 640 / this.emu.getScreenWidth();
+        System.out.println(pixelSize);
         this.init();
     }
 
     public void redraw() {
-        for (int x = 0; x < this.getWidth() / 10; x++) {
-            for (int y = 0; y < this.getHeight() / 10; y++) {
+        for (int x = 0; x < this.emu.getScreenWidth(); x++) {
+            for (int y = 0; y < this.emu.getScreenHeight(); y++) {
                 if (this.emu.getPixel(x, y)) {
                     this.gc.setFill(ON_PIXEL_COLOR);
                 }
                 else {
                     this.gc.setFill(OFF_PIXEL_COLOR);
                 }
-                this.gc.fillRect(x* 10, y * 10, 10, 10);                
+                this.gc.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);                
             }
         }
     }
