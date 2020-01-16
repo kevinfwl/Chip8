@@ -12,7 +12,7 @@ import java.io.IOException;
 public class Emulator{
     //init singleton
     public static Emulator INSTANCE = new Emulator();
-
+   
     public static final int SCHIP8_WIDTH = 128;
     public static final int SCHIP8_HEIGHT = 64;
     public static final int CHIP8_WIDTH = 64;
@@ -20,7 +20,7 @@ public class Emulator{
 
     public static final int SCHIP8_SPEED = 500;
     public static final int CHIP8_SPEED = 500;
-
+   public static boolean hit  = false;
     Keyboard keyboardObserver;
     Screen screenController;
 
@@ -48,10 +48,12 @@ public class Emulator{
     private boolean drawFlag;
     private boolean[] keyState;
 
+    private boolean debugState;    
+    private boolean canStep;
+
     public Emulator() {
         this.memory = new int[4096];
         this.fb = new boolean[CHIP8_WIDTH * CHIP8_HEIGHT];
-        // System.out.println(CHIP8_HEIGHT);
         this.stack = new int[16];
         this.V = new int[16];
         this.keyState = new boolean[16];
@@ -69,12 +71,13 @@ public class Emulator{
 
 
     public void load(String file) throws IOException{
+        init();
         Path fileLocation = Paths.get(file);
         byte[] data = Files.readAllBytes(fileLocation);
         for (int i = 0; i < data.length; ++i) {
             memory[0x200 + i] = data[i];
         }
-        System.out.println(data.length);
+        System.out.println("LOADED " + file + " - " + data.length + "b");
     }
 
     public void init() {
@@ -84,17 +87,27 @@ public class Emulator{
         this.pc = 0x200;
         this.drawFlag = false;
         this.canBeep = false;
+        this.fbx = CHIP8_WIDTH;
+        this.fby = CHIP8_HEIGHT;
         //init fontset
-        for (int i = 0; i < 80; i++) {
+        for (int i = 0; i < Fontset.FONT_SET_CHIP8.length; i++) {
             this.memory[i] = Fontset.FONT_SET_CHIP8[i];
         }
+        for (int i = 0; i < Fontset.FONT_SET_SCHIP8.length; i++) {
+            this.memory[i + 80] = Fontset.FONT_SET_SCHIP8[i];
+        }
+        //init keystate
         for (int i  = 0; i < 0x10; i++) {
             this.keyState[i] = false;
         }
-        System.out.println(this.fb.length);
-        for (int i = 0; i < 64 * 32; i++) {
+        for (int i = 0; i < 8; i++) {
+            this.RFL[i] = 0;
+        }
+        //init frame buffer
+        for (int i = 0; i < this.fbx * this.fby; i++) {
             this.fb[i] = false;
         }
+        if (this.screenController != null) this.screenController.init();
     }
 
     public void setScreen(Screen screen) {
@@ -102,7 +115,8 @@ public class Emulator{
     }
 
     public void fetch() {
-        this.opcode = (this.memory[this.pc] << 8 | (this.memory[this.pc + 1] & 0xff)) & 0x0000ffff;
+        this.opcode = ((this.memory[this.pc] << 8) & 0xff00) | (this.memory[this.pc + 1] & 0xff);
+        // this.opcode = 0xDAA0;
     }
 
     public void decrementTimer() {
@@ -116,11 +130,25 @@ public class Emulator{
         if (this.delay > 0) this.delay--;
     }
 
-    public void CPUcycle() throws Exception {
-        fetch();
-        execute();
-        decrementTimer();
-        // if (drawFlag) drawImages();
+    public void step() throws Exception {
+        if ((debugState && canStep) || !debugState) {
+            //
+            fetch();
+            if (debugState) {
+                printCurrentOpcode();
+            }
+            execute();
+            decrementTimer();
+            if (drawFlag) {
+                screenController.redraw();
+                drawFlag = false;
+            }
+
+            if (debugState) {
+                printResultState();
+            }
+        }
+        canStep = false;
     }
 
     public void drawImages() { 
@@ -141,22 +169,32 @@ public class Emulator{
         this.drawFlag = false;
     }
 
-    public void printDebugger() {
+
+    public void printCurrentOpcode() {
+            System.out.print("0x" + Integer.toHexString(this.pc) + " - ");
+            printOpcode(this.opcode);
+    }
+
+    public void printResultState() {
         String allRegs = "";
         String allStack = "";
         for (int i =0; i < 0x10; i++) {
-            allRegs += "0x" + intToString(i) + ": " + V[i] + "\t";
-            allStack += "0x" + intToString(i) + ": " + stack[i] + "\t";
+            allRegs += "" + intToString(i) + ":0x" + String.format("%02x", V[i]) + "\t";
         }
-        System.out.print("Executing: ");
-        printOpcode(this.opcode);
+        for (int i=0; i <= this.sp; i++) {
+            allStack += "" + intToString(i) + ":0x" + String.format("%02x", stack[i]) + "\t";
+        }
+        // System.out.print("Executing: ");
+        // printOpcode(this.opcode);
         System.out.println(allRegs);
         System.out.println(allStack);
-        System.out.println("I: 0x" + Integer.toHexString(I) + "\t" + "pc: 0x" + Integer.toHexString(this.pc) + "\t" + "timer:" + this.delay + "\t"  + "sound:" +  this.sound);
-        System.out.println("sp: " + this.sp + "\t" + "drawflag: " + this.drawFlag);
+        System.out.println("I: 0x" + Integer.toHexString(I) + "\tSP: " + this.sp  + "\tPC: 0x" + Integer.toHexString(this.pc));
+        System.out.println("DT:" + this.delay + "\tST:" +  this.sound + "\tdrawflag:" + this.drawFlag);
+        System.out.print("NEXT: 0x");
+        printOpcode(((this.memory[this.pc] << 8) & 0xff00) | (this.memory[this.pc + 1] & 0xff));     
+        System.out.println();
         System.out.println();
     }
-
     //PRIVATE FUNCTIONS
     //prints bytes into the rom
     public void printMem() {
@@ -188,7 +226,7 @@ public class Emulator{
     }
 
     public boolean getPixel(int x, int y) {
-        return this.fb[64 * y + x];
+        return this.fb[this.fbx * y + x];
     }
 
     public boolean getDrawFlag() {
@@ -201,6 +239,14 @@ public class Emulator{
 
     public int getScreenHeight() {
         return this.fby;
+    }
+
+    public void setDebugState(boolean debugState) {
+        this.debugState = debugState;
+    }
+
+    public void setCanStep() {
+        this.canStep = true;
     }
 
     public void setDrawFlag(boolean flag) {
@@ -268,8 +314,6 @@ public class Emulator{
             catch (Exception e) {
                 e.printStackTrace();
             }
- 
-        printDebugger();
     }
 
     //private opcode functions
@@ -282,22 +326,16 @@ public class Emulator{
 
         switch (this.opcode) {
             case 0xE0:
-                for (int i = 0; i < 2048; i++) this.fb[i] = false;
+                for (int i = 0; i < this.fb.length; i++) this.fb[i] = false;
                 break;
             case 0xEE:
                 this.pc = this.stack[this.sp];
                 this.sp--;
                 break;
-            //SCHIP8 OPCODES
-            // 00CN: Scroll display N lines down
             // 00FB: Scroll display 4 pixels right
-            // 00FC: Scroll display 4 pixels left
-            // 00FD: Exit CHIP interpreter
-            // 00FE: Disable extended screen mode
-            // 00FF: Enable extended screen mode for full-screen graphics
             case 0xFB:
                 for (int y = 0; y < this.fby; y++) {
-                    for (int x = this.fbx - 5; x >= 0; x--) {
+                    for (int x = this.fbx - 5; x >= 4; x--) {
                         this.fb[y * this.fbx + x] = this.fb[y *  this.fbx + (x - 4)];
                     }
                     for (int x = 0; x < 4; x++) {
@@ -305,40 +343,48 @@ public class Emulator{
                     }
                 }
                 break;
+            //SCHIP8 OPCODES
+            // 00FC: Scroll display 4 pixels left
             case 0xFC:
                 for (int y = 0; y < this.fby; y++) {
                     for (int x = 0; x < this.fbx - 4; x++) {
                         this.fb[y * this.fbx + x] = this.fb[y *  this.fbx + (x + 4)];
                     }
-                    for (int x = 0; x < this.fbx - 4; x++) {
+                    for (int x = this.fbx - 4; x < this.fbx; x++) {
                         this.fb[y * this.fbx + x] = false;
                     }
                 }
                 break;
+            // 00FD: Exit CHIP interpreter
             case 0xFD:
                 System.exit(0);
                 break;
             case 0xFE:
+                // System.out.println("shrink");
                 this.fbx = CHIP8_WIDTH;
                 this.fby = CHIP8_HEIGHT;
                 this.fb =  new boolean[CHIP8_HEIGHT *  CHIP8_WIDTH];
-                for (int i = 0; i < 80; i++) {
-                    this.memory[i] = Fontset.FONT_SET_CHIP8[i];
-                }
-                if (screenController != null) screenController.resize();
+                if (screenController != null) screenController.init();
                 break;
             case 0xFF:
-                System.out.println("SIr1");
+                // System.out.println("expand");
                 this.fbx = SCHIP8_WIDTH;
                 this.fby = SCHIP8_HEIGHT;
                 this.fb =  new boolean[SCHIP8_HEIGHT *  SCHIP8_WIDTH];
-                for (int i = 0; i < Fontset.FONT_SET_SCHIP8.length; i++) {
-                    this.memory[i] = Fontset.FONT_SET_SCHIP8[i];
-                }
-                if (screenController != null) screenController.resize();
+                if (screenController != null) screenController.init();
                 break;
-            //0x00CN - scroll down N
+            // 00CN: Scroll display N lines down
             default:
+                // System.out.println("scroll down");
+                int n = this.opcode & 0x0001;   
+                for (int x = 0; x < this.fbx ; x++) {
+                    for (int y = this.fby - n - 1; y >= n; y-- ) {
+                        this.fb[y * this.fbx + x] = this.fb[(y - n) * this.fbx + x];
+                    }
+                    for (int y = 0; y < n; y++ ) {
+                        this.fb[y * this.fbx + x] = false;
+                    }
+                }
                 ///DO THIS SHT
         }
         this.drawFlag = true;
@@ -463,12 +509,13 @@ public class Emulator{
     private void D() {
         //need to implement DXY0
         
-        int n = this.opcode & 0xf; 
+        int n = this.opcode & 0x000f; 
+        // System.out.println(n);
         int y = this.V[(this.opcode >>> 4) & 0xf];
         int x = this.V[(this.opcode >>> 8) & 0xf];
         int spriteSize = 8;
         boolean turnedOff = false;
-        
+        boolean largePrint = false; 
         if  (n == 0)  {
             spriteSize = 16;
             n = 16;
@@ -476,21 +523,23 @@ public class Emulator{
 
         for (int i = 0; i < n; i++) {
             int spriteRow = memory[I + i];
-            if (n == 16) spriteRow = ((memory[I + i * 2] << 4) & 0xff00) | (memory[I + i * 2 + 1] & 0xff);
+            if (n == 16) {
+                spriteRow = ((memory[I + i * 2] << 8) & 0xff00) | (memory[I + i * 2 + 1] & 0xff);
+            }
 
             for (int j = 0; j < spriteSize; j++) {
                 int displayColor = (spriteRow >>> ((spriteSize - 1) - j)) & 0x0001;
-                System.out.print(displayColor);
                 
                 //turn VF to true 
                 if (displayColor != 0) {
-                    int index = ( x + j + (y + i) * this.fbx ) % (this.fb.length);
+                    int index = ( x + j + (y + i) * this.fbx ) % this.fb.length;
                     if ((displayColor == 1) && this.fb[index]) turnedOff = true;
                     this.fb[index] ^= true;
                 }
             }  
-            System.out.println("");   
+            // System.out.println("");   
         }
+        // System.out.println("");   
 
         this.V[0xf] = turnedOff ? 1 : 0;
         this.drawFlag = true;
@@ -572,7 +621,8 @@ public class Emulator{
                 break;
             //SUPER CHIP 8 opcodes
             case 0x30:
-                this.I = this.V[x] * 10;
+                hit = true;
+                this.I = this.V[x] * 10 + 80;
                 break;
             case 0x75:
                 if (x > 7) throw new Exception("Err: 0XF385 x is over 7 for RPL store");
@@ -587,6 +637,7 @@ public class Emulator{
             default:
                 throw new Exception("Err: F opcode option is not found");
         }
+        // if (hit) System.exit(1);
         this.pc += 2;
     }
 

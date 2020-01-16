@@ -11,7 +11,7 @@ class Screen extends Canvas {
     private GraphicsContext gc;
 
     Screen(Emulator emu) {
-        super(emu.getScreenWidth() * 10, emu.getScreenHeight() * 10);
+        super(640, 320);
         this.emu = emu;
         this.emu.setScreen(this);
         this.gc = getGraphicsContext2D();
@@ -19,28 +19,16 @@ class Screen extends Canvas {
     }
     //initializes the screen and sets the fill color
     public void init() {
+        if (this.emu == null) return;
+        this.pixelSize = 640 / this.emu.getScreenWidth();
         gc.setFill(OFF_PIXEL_COLOR);
-        gc.fillRect(0, 0, this.getWidth(), this.getHeight());
-    
-        // gc.fillRect(0, 0, 10, 10);
-        // gc.fillRect(0, 300, 10, 10);
-        // gc.fillRect(0, 260, 10, 10);
-
-        // gc.fillRect(0, 310, 10, 10);
-
-        // gc.fillRect(630, 300, 10, 10);
-        // gc.fillRect(630, 260, 10, 10);
-
-        // gc.fillRect(630, 310, 10, 10);
+        gc.fillRect(0, 0, 640, 320);
     }
 
     public void resize() {
         if (this.emu == null) return;
-        // this.setHeight(this.emu.getScreenHeight() * pixelSize);
-        // this.setWidth(this.emu.getScreenWidth() * pixelSize);
         this.pixelSize = 640 / this.emu.getScreenWidth();
-        System.out.println(pixelSize);
-        this.init();
+;
     }
 
     public void redraw() {

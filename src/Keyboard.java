@@ -16,7 +16,6 @@ public class Keyboard implements EventHandler<KeyEvent> {
 
     public static Map<KeyCode, Integer> keyMap;
     private Emulator emu;
-
     static {
         keyMap = new HashMap<KeyCode, Integer>(){
             //call initializer on anonymous subclass to init the keymap (Hashmaps doesn't have init functions)
@@ -53,17 +52,23 @@ public class Keyboard implements EventHandler<KeyEvent> {
     public void handle(KeyEvent e) {
         if (this.emu == null) return;
         try  {
+
             if (e.getEventType() == KeyEvent.KEY_PRESSED) {
+                if (e.getCode() == KeyCode.ENTER) 
+                 this.emu.setCanStep();
                 if (keyMap.get(e.getCode()) != null)
                     this.emu.setKeyOn(keyMap.get(e.getCode()));
             }
     
             if (e.getEventType() ==  KeyEvent.KEY_RELEASED) {
+
                 if (keyMap.get(e.getCode()) != null)
                     this.emu.setKeyOff(keyMap.get(e.getCode()));
+                 
             }
         }
         catch (Exception exception) {
+            exception.printStackTrace();
         }
     }
 }

@@ -24,6 +24,7 @@ public class Main extends Application {
     private boolean debugState;
     private FileChooser fileChooser;
     private File rom;
+    private Timeline clockCycler;
 
     public static void main(String[] args) {
         launch(args);
@@ -37,7 +38,9 @@ public class Main extends Application {
         this.screen.init();
         this.fileChooser = new FileChooser();
         this.fileChooser.setInitialDirectory(new File("./roms"));
-        this.debugState = false ;
+        this.debugState = true;
+
+        emu.setDebugState(this.debugState);
         this.rom = null;
         try {
             this.emu.init();
@@ -60,15 +63,8 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        // add debugger
-        // add load rom
-        // fix the pixels
-        // add the commandline incrementor and current machine state
-        // set timer to 60 fps
-        // file selection not working
-
         primaryStage.setTitle("kevinfwl's CHIP8");
-
+      
         // new implementation of keyframe
         KeyFrame frame = new KeyFrame(Duration.millis(4), new EventHandler<ActionEvent>() {
             @Override
@@ -76,22 +72,14 @@ public class Main extends Application {
                 if (rom == null)
                     return;
                 try {
-                    emu.CPUcycle();
-                    if (emu.getDrawFlag()) {
-                        screen.redraw();
-                        emu.setDrawFlag(false);
-                    }
-
-                    if (debugState) {
-                        stop();
-                    }
+                    emu.step();
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.exit(1);
                 }
             }
         });
-        Timeline clockCycler = new Timeline(frame);
+        clockCycler = new Timeline(frame);
         clockCycler.setCycleCount(Animation.INDEFINITE);
 
         // build the menu bar
@@ -117,11 +105,11 @@ public class Main extends Application {
         menuBar.getMenus().add(options);
         options.getItems().add(loadRom);
 
-        BorderPane root2 = new BorderPane();
-        root2.setTop(menuBar);
-        root2.setCenter(screen);
+        BorderPane root = new BorderPane();
+        root.setTop(menuBar);
+        root.setCenter(screen);
 
-        Scene mainScene = new Scene(root2);
+        Scene mainScene = new Scene(root);
 
         mainScene.setOnKeyPressed(this.keyboard);
         mainScene.setOnKeyReleased(this.keyboard);
