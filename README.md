@@ -1,5 +1,5 @@
 # Chip8
-A simple emulator for chip8.
+A simple emulator for chip8/schip8 vm.
 
 ## build
 On linux: 
