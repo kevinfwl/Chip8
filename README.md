@@ -1,4 +1,4 @@
-E# Chip8
+# Chip8
 A simple emulator for chip8.
 
 ## build
@@ -16,9 +16,10 @@ On Windows:
 
 ## Specs
 Clock speed: 600hz
+
 Keypad mapping:
 
-[1][2][3][A]
-[4][5][6][B]
-[7][8][9][C]
+[1][2][3][A]\
+[4][5][6][B]\
+[7][8][9][C]\
 [E][0][F][D]
